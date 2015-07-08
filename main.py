@@ -91,7 +91,7 @@ def load_from_file(infile, outdir, force, allow_nesting):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n", "--name", type=str, required=False, default=None, help="name of package")
+    parser.add_argument("name", nargs="?", type=str, default=None, help="name of package")
     parser.add_argument("-e", "--url", type=str, required=False, default=None, help="url of package as zip")
     parser.add_argument("-r", "--reqsfile", type=str, required=False, default=None, help="path to requirements file")
     parser.add_argument("-o", "--installdir", type=str, default=MATLABDIR, help="installation directory")
