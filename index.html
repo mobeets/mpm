@@ -48,11 +48,13 @@ alias mpm='python $HOME/mpm/main.py -o $MPM_MATLABPATH'
 </code></pre>
 
 <p>The <code>-o</code> option specifies where mpm should install its MATLAB packages.
-(If you didn't clone mpm to your home directory, make sure to correct the path in the <code>alias</code> definition above.)</p>
+(If you didn't clone mpm to your home directory, make sure to correct the path in the alias definition above.)</p>
 
-<p><strong>3)</strong> Place the script <code>mpmpath.m</code> somewhere in your Matlab search <a href="http://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html">path</a>.</p>
+<p><strong>3)</strong> Make sure the script <code>mpmpath.m</code> is somewhere in your Matlab search <a href="http://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html">path</a>.</p>
 
-<p><strong>4)</strong> Call <code>mpmpath</code> in your Matlab <a href="http://www.mathworks.com/help/matlab/ref/startup.html">startup</a> script, and after installing any packages using <code>mpm</code>.</p>
+<p>It's probably best to clone mpm into $MPM_MATLABPATH, and then you can skip this step.</p>
+
+<p><strong>4)</strong> Call <code>mpmpath</code> in your Matlab <a href="http://www.mathworks.com/help/matlab/ref/startup.html">startup</a> script, and after installing any packages using mpm.</p>
 
 <h2>
 <a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
@@ -69,7 +71,7 @@ alias mpm='python $HOME/mpm/main.py -o $MPM_MATLABPATH'
 <pre><code>$ mpm mASD -e https://github.com/mobeets/mASD.git
 </code></pre>
 
-<p>If the package already exists in the installation directory you can force <code>mpm</code> to overwrite it using <code>-f</code>.</p>
+<p>If the package already exists in the installation directory you can force mpm to overwrite it using <code>-f</code>.</p>
 
 <pre><code>$ mpm mASD -e https://github.com/mobeets/mASD.git
 Package "mASD" already exists at /Users/mobeets/Documents/MATLAB/mASD
@@ -88,6 +90,8 @@ Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
 gridfitdir -e http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
 mASD -e https://github.com/mobeets/mASD.git
 </code></pre>
+
+<p>Note: After installing anything using mpm you must either restart Matlab or call <code>mpmpath</code>.</p>
       </section>
       <footer>
         <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
