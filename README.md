@@ -33,8 +33,13 @@ This line will also need to be run after installing any packages using `mpm`.
 
 __Install a single file__
 
-* From File Exchange: `mpm export_fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig`
-* From Github: `mpm mASD -e https://github.com/mobeets/mASD.git`
+From File Exchange:
+
+`$ mpm export_fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig`
+
+From Github:
+
+`$ mpm mASD -e https://github.com/mobeets/mASD.git`
 
 If the package already exists in the installation directory you can force `mpm` to overwrite it using `-f`.
 
@@ -47,7 +52,7 @@ Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
 
 __Install from list of requirements in file__
 
-`mpm -r requirements.txt`
+`$ mpm -r requirements.txt`
 
 Your requirements file should look something like this:
 
