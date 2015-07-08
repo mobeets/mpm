@@ -1,3 +1,4 @@
+import sys
 import os.path
 import argparse
 import urllib2
@@ -37,6 +38,8 @@ def unzip(url, outdir):
         i = url.rfind('.git')
         url0 = url[:i] + '/zipball/master' + url[i+4:]
         zipfile = readzip(url0)
+        if zipfile is None:
+            zipfile = readzip(url + '/zipball/master')
     if zipfile is None and 'fileexchange' in url:
         zipfile = readzip(url + '?download=true')
     if zipfile is None:
@@ -78,12 +81,16 @@ def load_from_file(infile, outdir, force):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--name", type=str, required=False, default=None, help="name of package")
-    parser.add_argument("-r", "--reqsfile", type=str, required=False, default=None, help="path to requirements file")
     parser.add_argument("-e", "--url", type=str, required=False, default=None, help="url of package as zip")
+    parser.add_argument("-r", "--reqsfile", type=str, required=False, default=None, help="path to requirements file")
     parser.add_argument("-o", "--outdir", type=str, default=MATLABDIR, help="installation directory")
     parser.add_argument("-f", "--force", action='store_true', default=False, help="overwrite if package already exists")
     args = parser.parse_args()
     if args.reqsfile:
         load_from_file(args.reqsfile, args.outdir, args.force)
     else:
+        if not args.url and not args.name:
+            parser.print_help()
+            print "Must provide -r, or -n and -e"
+            sys.exit(1)
         main(args.url, args.name, args.outdir, args.force)
