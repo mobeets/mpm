@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>mpm (Matlab Package Manager) by mobeets</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">mpm (Matlab Package Manager)</h1>
+        <p class="header">Simple package management for Matlab, inspired by pip</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/mobeets/mpm/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/mobeets/mpm/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/mobeets/mpm">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/mobeets">mobeets</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a id="matlab-package-manager" class="anchor" href="#matlab-package-manager" aria-hidden="true"><span class="octicon octicon-link"></span></a>Matlab Package Manager</h1>
+
+<p>A simple Matlab package manager (inspired by <a href="https://github.com/pypa/pip">pip</a>) for downloading packages from Matlab Central's File Exchange, GitHub repositories, or any other url pointing to a .zip file.</p>
+
+<h2>
+<a id="setup" class="anchor" href="#setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setup</h2>
+
+<p><strong>1)</strong> Clone this repository</p>
+
+<pre><code>$ cd ~
+$ git clone https://github.com/mobeets/mpm
+</code></pre>
+
+<p><strong>2)</strong> Add the following to your <code>~/.bash_profile</code>:</p>
+
+<pre><code>MPM_MATLABPATH=$HOME/Documents/MATLAB
+export MPM_MATLABPATH
+alias mpm='python $HOME/mpm/main.py -o $MPM_MATLABPATH'
+</code></pre>
+
+<p>The <code>-o</code> option specifies where mpm should install its MATLAB packages.
+(If you didn't clone mpm to your home directory, make sure to correct the path in the <code>alias</code> definition above.)</p>
+
+<p><strong>3)</strong> Add the following line to your Matlab startup script:</p>
+
+<pre><code>&gt;&gt; [~,mpmbin] = system('source ~/.bash_profile; echo $MPM_MATLABPATH'); addpath(genpath(mpmbin(1:end-1)));
+</code></pre>
+
+<p>This line will also need to be run after installing any packages using <code>mpm</code>.</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p><strong>Install a single file</strong></p>
+
+<p>From File Exchange:</p>
+
+<p><code>$ mpm export_fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig</code></p>
+
+<p>From Github:</p>
+
+<p><code>$ mpm mASD -e https://github.com/mobeets/mASD.git</code></p>
+
+<p>If the package already exists in the installation directory you can force <code>mpm</code> to overwrite it using <code>-f</code>.</p>
+
+<pre><code>$ mpm mASD -e https://github.com/mobeets/mASD.git
+Package "mASD" already exists at /Users/mobeets/Documents/MATLAB/mASD
+$ mpm mASD -e https://github.com/mobeets/mASD.git -f
+Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
+</code></pre>
+
+<p><strong>Install from list of requirements in file</strong></p>
+
+<p><code>$ mpm -r requirements.txt</code></p>
+
+<p>Your requirements file should look something like this:</p>
+
+<pre><code>export-fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
+gridfitdir -e http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
+mASD -e https://github.com/mobeets/mASD.git
+</code></pre>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
