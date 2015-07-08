@@ -1,4 +1,4 @@
-http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
-https://codeload.github.com/altmany/export_fig/legacy.zip/master
-https://github.com/mobeets/gaborMotionPulses.git
+export-fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
+gridfitdir -e http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
+export-fig -e https://codeload.github.com/altmany/export_fig/legacy.zip/master
+mASD -e https://github.com/mobeets/mASD.git
