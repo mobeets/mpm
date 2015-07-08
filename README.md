@@ -60,3 +60,4 @@ Your requirements file should look something like this:
     gridfitdir -e http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
     mASD -e https://github.com/mobeets/mASD.git
 
+Note: After installing anything using mpm you must either restart Matlab or call `mpmpath`.
