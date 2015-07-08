@@ -15,13 +15,13 @@ alias mpm='python $HOME/mpm/main.py -o $MPM_MATLABPATH'
 ```
 
 The `-o` option specifies where mpm should install its MATLAB packages.
-(If you didn't clone mpm to your home directory, make sure to correct the path in the `alias` definition above.)
+(If you didn't clone mpm to your home directory, make sure to correct the path in the alias definition above.)
 
 __3)__ Make sure the script `mpmpath.m` is somewhere in your Matlab search [path](http://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html).
 
-It's probably best to clone `mpm` into `$MPM_MATLABPATH`, and then you can skip this step.
+It's probably best to clone mpm into $MPM_MATLABPATH, and then you can skip this step.
 
-__4)__ Call `mpmpath` in your Matlab [startup](http://www.mathworks.com/help/matlab/ref/startup.html) script, and after installing any packages using `mpm`.
+__4)__ Call `mpmpath` in your Matlab [startup](http://www.mathworks.com/help/matlab/ref/startup.html) script, and after installing any packages using mpm.
 
 ## Usage
 
@@ -39,7 +39,7 @@ From Github:
 $ mpm mASD -e https://github.com/mobeets/mASD.git
 ```
 
-If the package already exists in the installation directory you can force `mpm` to overwrite it using `-f`.
+If the package already exists in the installation directory you can force mpm to overwrite it using `-f`.
 
 ```
 $ mpm mASD -e https://github.com/mobeets/mASD.git
