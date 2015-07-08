@@ -6,7 +6,22 @@ A simple Matlab package manager (inspired by [pip](https://github.com/pypa/pip))
 
 __Setup__
 
-`alias mpm='python main.py'`
+1) Clone this repository
+
+```
+$ cd ~
+$ git clone https://github.com/mobeets/mpm
+```
+
+2) Add the following to your `~/.bash_profile`:
+
+```    
+export MPM_MATLABPATH=$HOME/Documents/MATLAB
+alias mpm='python $HOME/mpm/main.py -o $MPM_MATLABPATH'
+```
+
+(Make sure to correct the path to `mpm/main.py` to wherever you cloned the directory.)
+
 
 __Install a single file__
 
