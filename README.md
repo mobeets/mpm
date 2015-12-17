@@ -33,16 +33,13 @@ Package "matlab2tikz" already exists at /Users/mobeets/Documents/MATLAB/matlab2t
 Installed "matlab2tikz" to /Users/mobeets/Documents/MATLAB/matlab2tikz
 ```
 
-__Install multiple packages using requirements file__
+__Install multiple packages using a requirements file__
 
 ```
 >> mpm -r /Users/mobeets/example/requirements.txt
 ```
 
-Specifying a requirements file lets you install multiple packages at once. Note that `mpm` requires the absolute path to your requirements file. `which('requirements.txt')` might help! The file should look something like this:
-
-    export-fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-    matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
+Specifying a requirements file lets you install multiple packages at once. Note that `mpm` requires the absolute path to your requirements file. `which('requirements.txt')` might help! The file should just be a list of package names and urls. See 'requirements-example.txt' for an example.
 
 ## What it does
 
