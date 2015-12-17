@@ -84,9 +84,7 @@ def main(url, name, outdir, force, allow_nesting):
 def load_from_file(infile, outdir, force, allow_nesting):
     with open(infile) as f:
         for line in f.readlines():
-            line = line.strip()
-            if '-e' not in line: continue
-            name, _, url = line.partition('-e')
+            name, url = line.split()
             main(url, name, outdir, force, allow_nesting)
 
 if __name__ == '__main__':

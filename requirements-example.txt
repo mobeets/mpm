@@ -1,4 +1,3 @@
 export-fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-gridfitdir http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
-export-fig https://codeload.github.com/altmany/export_fig/legacy.zip/master
 cbrewer http://www.mathworks.com/matlabcentral/fileexchange/34087-cbrewer---colorbrewer-schemes-for-matlab
+matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
