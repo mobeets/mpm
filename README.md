@@ -15,21 +15,21 @@ __Install a single package__
 From Matlab File Exchange:
 
 ```
->> mpm export_fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
+>> mpm export_fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
 ```
 
 From Github:
 
 ```
->> mpm mASD -e https://github.com/mobeets/mASD.git
+>> mpm mASD https://github.com/mobeets/mASD.git
 ```
 
 If the package already exists in the installation directory you can force mpm to overwrite it using `-f`.
 
 ```
->> mpm mASD -e https://github.com/mobeets/mASD.git
+>> mpm mASD https://github.com/mobeets/mASD.git
 Package "mASD" already exists at /Users/mobeets/Documents/MATLAB/mASD
->> mpm mASD -e https://github.com/mobeets/mASD.git -f
+>> mpm mASD https://github.com/mobeets/mASD.git -f
 Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
 ```
 
@@ -41,7 +41,6 @@ __Install multiple packages using requirements file__
 
 Specifying a requirements file lets you install multiple packages at once. Note that `mpm` requires the absolute path to your requirements file. `which('requirements.txt')` might help! The file should look something like this:
 
-    export-fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-    gridfitdir -e http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
-    mASD -e https://github.com/mobeets/mASD.git
-
+    export-fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
+    gridfitdir http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
+    mASD https://github.com/mobeets/mASD.git

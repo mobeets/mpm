@@ -92,7 +92,7 @@ def load_from_file(infile, outdir, force, allow_nesting):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("name", nargs="?", type=str, default=None, help="name of package")
-    parser.add_argument("-e", "--url", type=str, required=False, default=None, help="url of package as zip")
+    parser.add_argument("url", nargs="?", type=str, default=None, help="url of package as zip")
     parser.add_argument("-r", "--reqsfile", type=str, required=False, default=None, help="path to requirements file")
     parser.add_argument("-o", "--installdir", type=str, default=MATLABDIR, help="installation directory")
     parser.add_argument("-f", "--force", action='store_true', default=False, help="overwrite if package already exists")
@@ -103,6 +103,6 @@ if __name__ == '__main__':
     else:
         if not args.url and not args.name:
             parser.print_help()
-            print "Must provide -r, or -n and -e"
+            print "Must provide -r, or a name and -e"
             sys.exit(1)
         main(args.url, args.name, args.installdir, args.force, args.allow_nesting)
