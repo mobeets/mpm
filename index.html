@@ -1,103 +1,81 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
     <title>mpm (Matlab Package Manager) by mobeets</title>
-
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/github-light.css">
-    <script src="javascripts/scale.fix.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
   <body>
-    <div class="wrapper">
-      <header>
-        <h1 class="header">mpm (Matlab Package Manager)</h1>
-        <p class="header">Simple package management for Matlab, inspired by pip</p>
+    <section class="page-header">
+      <h1 class="project-name">mpm (Matlab Package Manager)</h1>
+      <h2 class="project-tagline">Simple package management for Matlab, inspired by pip</h2>
+      <a href="https://github.com/mobeets/mpm" class="btn">View on GitHub</a>
+      <a href="https://github.com/mobeets/mpm/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/mobeets/mpm/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-        <ul>
-          <li class="download"><a class="buttons" href="https://github.com/mobeets/mpm/zipball/master">Download ZIP</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/mobeets/mpm/tarball/master">Download TAR</a></li>
-          <li><a class="buttons github" href="https://github.com/mobeets/mpm">View On GitHub</a></li>
-        </ul>
-
-        <p class="header">This project is maintained by <a class="header name" href="https://github.com/mobeets">mobeets</a></p>
-
-
-      </header>
-      <section>
-        <h1>
-<a id="matlab-package-manager" class="anchor" href="#matlab-package-manager" aria-hidden="true"><span class="octicon octicon-link"></span></a>Matlab Package Manager</h1>
+    <section class="main-content">
+      <h1>
+<a id="matlab-package-manager-mpm" class="anchor" href="#matlab-package-manager-mpm" aria-hidden="true"><span class="octicon octicon-link"></span></a>Matlab Package Manager (mpm)</h1>
 
 <p>A simple package manager for Matlab (inspired by <a href="https://github.com/pypa/pip">pip</a>). Downloads packages from Matlab Central's File Exchange, GitHub repositories, or any other url pointing to a .zip file.</p>
 
 <h2>
 <a id="setup" class="anchor" href="#setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setup</h2>
 
-<p><strong>1)</strong> Clone this repository</p>
-
-<p><strong>2)</strong> Edit your <code>~/.bash_profile</code></p>
-
-<pre><code>MPM_MATLABPATH=$HOME/Documents/MATLAB
-export MPM_MATLABPATH
-alias mpm='python $HOME/mpm/main.py -o $MPM_MATLABPATH'
-</code></pre>
-
-<p>The <code>-o</code> option specifies where mpm should install its MATLAB packages.
-(If you didn't clone mpm to your home directory, make sure to correct the path in the alias definition above.)</p>
-
-<p><strong>3)</strong> Make sure the script <code>mpmpath.m</code> is somewhere in your Matlab search <a href="http://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html">path</a>.</p>
-
-<p>It's probably best to clone mpm into $MPM_MATLABPATH, and then you can skip this step.</p>
-
-<p><strong>4)</strong> Call <code>mpmpath</code> in your Matlab <a href="http://www.mathworks.com/help/matlab/ref/startup.html">startup</a> script, and after installing any packages using mpm.</p>
+<p>Clone this repo and add it to your Matlab path (using <code>addpath</code>).</p>
 
 <h2>
 <a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
 
-<p><strong>Install a single file</strong></p>
+<p><strong>Install a single package</strong></p>
 
-<p>From File Exchange:</p>
+<p>From Matlab File Exchange:</p>
 
-<pre><code>$ mpm export_fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
+<pre><code>&gt;&gt; mpm export_fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
 </code></pre>
 
 <p>From Github:</p>
 
-<pre><code>$ mpm mASD -e https://github.com/mobeets/mASD.git
+<pre><code>&gt;&gt; mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
 </code></pre>
+
+<p>Note that for Github repos you must add the '.git' to the url.</p>
 
 <p>If the package already exists in the installation directory you can force mpm to overwrite it using <code>-f</code>.</p>
 
-<pre><code>$ mpm mASD -e https://github.com/mobeets/mASD.git
-Package "mASD" already exists at /Users/mobeets/Documents/MATLAB/mASD
-$ mpm mASD -e https://github.com/mobeets/mASD.git -f
-Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
+<pre><code>&gt;&gt; mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
+Package "matlab2tikz" already exists at /Users/mobeets/Documents/MATLAB/matlab2tikz
+&gt;&gt; mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git -f
+Installed "matlab2tikz" to /Users/mobeets/Documents/MATLAB/matlab2tikz
 </code></pre>
 
-<p><strong>Install from list of requirements in file</strong></p>
+<p><strong>Install multiple packages using a requirements file</strong></p>
 
-<pre><code>$ mpm -r requirements.txt
+<pre><code>&gt;&gt; mpm -r /Users/mobeets/example/requirements.txt
 </code></pre>
 
-<p>Your requirements file should look something like this:</p>
+<p>Specifying a requirements file lets you install multiple packages at once. Note that <code>mpm</code> requires the absolute path to your requirements file. <code>which('requirements.txt')</code> might help! The file should just be a list of package names and urls. See 'requirements-example.txt' for an example.</p>
 
-<pre><code>export-fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-gridfitdir -e http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
-mASD -e https://github.com/mobeets/mASD.git
-</code></pre>
+<h2>
+<a id="what-it-does" class="anchor" href="#what-it-does" aria-hidden="true"><span class="octicon octicon-link"></span></a>What it does</h2>
 
-<p>Note: After installing anything using mpm you must either restart Matlab or call <code>mpmpath</code>.</p>
-      </section>
-      <footer>
-        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+<p>By default, mpm will install all Matlab packages to the directory specified by <code>userpath</code>. You can edit <code>config.m</code> to specify a custom installation directory.</p>
+
+<p>If you restart Matlab, you'll want to call <code>mpmpaths</code> to re-add all the folders in the installation directory to your Matlab path. Better yet, just call <code>mpmpaths</code> from your Matlab <a href="http://www.mathworks.com/help/matlab/ref/startup.html">startup script</a>. (Note that <code>mpmpaths</code> won't add any subfolders of packages.)</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/mobeets/mpm">mpm (Matlab Package Manager)</a> is maintained by <a href="https://github.com/mobeets">mobeets</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
-    </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-		
+
+    </section>
+
+  
   </body>
 </html>
