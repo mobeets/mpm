@@ -4,9 +4,7 @@ A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/p
 
 ## Setup
 
-Clone this repo and add it to your Matlab path. By default, mpm will install all Matlab packages to the directory specified by `userpath`. You can edit `config.m` to specify a custom installation directory.
-
-You can call `mpmpaths` in your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html) to automatically add all folders in the installation directory to your Matlab path. (Note that this won't add any subfolders.)
+Clone this repo and add it to your Matlab path (using `addpath`).
 
 ## Usage
 
@@ -45,3 +43,9 @@ Specifying a requirements file lets you install multiple packages at once. Note 
 
     export-fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
     matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
+
+## What it does
+
+By default, mpm will install all Matlab packages to the directory specified by `userpath`. You can edit `config.m` to specify a custom installation directory.
+
+If you restart Matlab, you'll want to call `mpmpaths` to re-add all the folders in the installation directory to your Matlab path. Better yet, just call `mpmpaths` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html). (Note that `mpmpaths` won't add any subfolders of packages.)
