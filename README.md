@@ -21,16 +21,18 @@ From Matlab File Exchange:
 From Github:
 
 ```
->> mpm mASD https://github.com/mobeets/mASD.git
+>> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
 ```
+
+Note that for Github repos you must add the '.git' to the url.
 
 If the package already exists in the installation directory you can force mpm to overwrite it using `-f`.
 
 ```
->> mpm mASD https://github.com/mobeets/mASD.git
-Package "mASD" already exists at /Users/mobeets/Documents/MATLAB/mASD
->> mpm mASD https://github.com/mobeets/mASD.git -f
-Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
+>> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
+Package "matlab2tikz" already exists at /Users/mobeets/Documents/MATLAB/matlab2tikz
+>> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git -f
+Installed "matlab2tikz" to /Users/mobeets/Documents/MATLAB/matlab2tikz
 ```
 
 __Install multiple packages using requirements file__
@@ -42,5 +44,4 @@ __Install multiple packages using requirements file__
 Specifying a requirements file lets you install multiple packages at once. Note that `mpm` requires the absolute path to your requirements file. `which('requirements.txt')` might help! The file should look something like this:
 
     export-fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-    gridfitdir http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
-    mASD https://github.com/mobeets/mASD.git
+    matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
