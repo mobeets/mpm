@@ -1,4 +1,4 @@
-# Matlab Package Manager
+# Matlab Package Manager (mpm)
 
 A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/pip)). Downloads packages from Matlab Central's File Exchange, GitHub repositories, or any other url pointing to a .zip file.
 
@@ -10,7 +10,7 @@ You can call `mpmpaths` in your Matlab [startup script](http://www.mathworks.com
 
 ## Usage
 
-__Install a single file__
+__Install a single package__
 
 From Matlab File Exchange:
 
@@ -33,7 +33,7 @@ Package "mASD" already exists at /Users/mobeets/Documents/MATLAB/mASD
 Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
 ```
 
-__Install from list of requirements in file__
+__Install multiple packages using requirements file__
 
 ```
 >> mpm -r /Users/mobeets/example/requirements.txt
