@@ -4,5 +4,9 @@ function MPM_INSTALL_DIR = mpmInstallDir()
     if ~exist('MPM_INSTALL_DIR', 'var')
         error('MPM_INSTALL_DIR was not defined in config.m');
     end
-    MPM_INSTALL_DIR = strrep(MPM_INSTALL_DIR, ':', '');
+    if ispc
+        % do nothing
+    else
+        MPM_INSTALL_DIR = strrep(MPM_INSTALL_DIR, ':', '');
+    end
 end
