@@ -1,4 +1,4 @@
-function MPM_INSTALL_DIR = mpmInstallDir()
+function [MPM_INSTALL_DIR, PYTHON_EXE] = mpmprefs()
     curdir = fileparts(mfilename('fullpath'));
     run(fullfile(curdir, 'config.m')); % loads MPM_INSTALL_DIR
     if ~exist('MPM_INSTALL_DIR', 'var')
@@ -8,5 +8,8 @@ function MPM_INSTALL_DIR = mpmInstallDir()
         % do nothing
     else
         MPM_INSTALL_DIR = strrep(MPM_INSTALL_DIR, ':', '');
+    end
+    if ~exist('PYTHON_EXE', 'var')
+        PYTHON_EXE = 'python';
     end
 end

@@ -6,7 +6,7 @@ function mpmpaths(installDir)
 % 
 
     if nargin < 2
-        MPM_INSTALL_DIR = mpmInstallDir();
+        [MPM_INSTALL_DIR,~] = mpmprefs;
         installDir = MPM_INSTALL_DIR;
     end
 

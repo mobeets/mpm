@@ -124,7 +124,7 @@ def check_args_in_file(args, i):
         msgs.append(msg)
     return msgs
 
-def load_from_file(infile, outdir, force, searchonly):
+def load_from_file(infile, outdir, force, searchonly, pythonexe='python'):
     curdir = os.path.dirname(os.path.abspath(__file__))
     mpmpath = os.path.join(curdir, 'mpm.py')
     extra_args = ''
@@ -143,7 +143,7 @@ def load_from_file(infile, outdir, force, searchonly):
             for msg in msgs:
                 print 'WARNING: ' + msg
             args += extra_args.split()
-            call(['python', mpmpath] + args)
+            call([pythonexe, mpmpath] + args)
 
 def check_args(args):
     msgs = []
@@ -174,6 +174,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--searchonly", action='store_true', default=False, help="search only (no install)")
     parser.add_argument("-g", "--githubfirst", action='store_true', default=False, help="check github before matlab fileexchange")
     parser.add_argument("-v", "--version", type=str, required=False, default=None, help="attempt t find particular release version on Github")
+    parser.add_argument("--pythonexe", type=str, required=False, default='python', help="specify which python to call (only relevant if reqts file set)")
     args = parser.parse_args()
     msgs = check_args(args)
     if msgs:
@@ -182,6 +183,6 @@ if __name__ == '__main__':
             print msg
         sys.exit(1)
     if args.reqsfile:        
-        load_from_file(args.reqsfile, args.installdir, args.force, args.searchonly)
+        load_from_file(args.reqsfile, args.installdir, args.force, args.searchonly, args.pythonexe)
     else:        
         main(args.url, args.name, args.installdir, args.force, args.allow_nesting, args.internaldir, args.searchonly, args.githubfirst, args.version)
