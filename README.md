@@ -6,34 +6,50 @@ A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/p
 
 Clone this repo and add it to your Matlab path (using `addpath`).
 
+To run the basic version you will need a working Python installation. To install repositories without specifying a url, you will also need the `lxml` and `PyGithub` packages (which you can install with `$ pip install ...`).
+
 ## Usage
 
-__Install a single package__
+### Install a single package
 
-From Matlab File Exchange:
+__Install without a url (searches FileExchange and Github):__
+
+```
+>> mpm export_fig
+```
+
+__Install a particular Github release (by tag)__
+
+```
+>> mpm matlab2tikz -v 1.0.0
+```
+
+__Search without installing:__
+
+```
+>> mpm export_fig -s
+```
+
+__Install from a url:__
 
 ```
 >> mpm export_fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
 ```
-
-From Github:
-
-```
->> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
-```
-
-Note that for Github repos you must add the '.git' to the url.
-
-If the package already exists in the installation directory you can force mpm to overwrite it using `-f`.
+OR:
 
 ```
->> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
-Package "matlab2tikz" already exists at /Users/mobeets/Documents/MATLAB/matlab2tikz
->> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git -f
-Installed "matlab2tikz" to /Users/mobeets/Documents/MATLAB/matlab2tikz
+>> mpm export_fig https://github.com/altmany/export_fig.git
 ```
 
-__Install multiple packages using a requirements file__
+Note that for Github repo urls you must add the '.git' to the url.
+
+__Overwrite existing packages:__
+
+```
+>> mpm matlab2tikz -f
+```
+
+### Install multiple packages using a requirements file
 
 ```
 >> mpm -r /Users/mobeets/example/requirements.txt
