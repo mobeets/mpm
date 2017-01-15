@@ -4,9 +4,7 @@ A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/p
 
 ## Setup
 
-Clone this repo and add it to your Matlab path (using `addpath`).
-
-To run the basic version you will need a working Python installation. To install repositories without specifying a url, you will also need the `lxml` and `PyGithub` packages (which you can install with `$ pip install ...`).
+Download/clone this repo and add it to your Matlab path (using `addpath`).
 
 ## Usage
 
@@ -62,3 +60,11 @@ Specifying a requirements file lets you install multiple packages at once. Note 
 By default, mpm will install all Matlab packages to the directory specified by `userpath`. You can edit `config.m` to specify a custom installation directory.
 
 If you restart Matlab, you'll want to call `mpmpaths` to re-add all the folders in the installation directory to your Matlab path. Better yet, just call `mpmpaths` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html). (Note that `mpmpaths` won't add any subfolders of packages.)
+
+## Troubleshooting
+
+To run the basic version of mpm you will need a working Python installation. I recommend [anaconda](https://www.continuum.io/downloads).
+
+To install repositories without specifying a url, you will also need the `lxml` and `PyGithub` packages (which you can install with `$ pip install ...`).
+
+Finally, make sure you set `PYTHON_EXE` in the `config.m` file appropriately.
