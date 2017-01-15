@@ -38,7 +38,8 @@ def readzip(url):
     #     print e.args
     #     return
 
-def write_to_mpmfile(mpmfile, data):
+def write_to_mpmfile(outdir, data, filename='mpm.json'):
+    mpmfile = os.path.join(outdir, filename)
     if os.path.exists(mpmfile):
         with open(mpmfile) as f:
             objs = json.load(f)
@@ -101,13 +102,16 @@ def unzip(url, outdir, allow_nesting):
         if allow_nesting:
             return True
         if len(dirnames) == 1 or (len(dirnames) == 2 and 'license.txt' in dirnames):
+            if 'license.txt' in dirnames:
+                dirnames.remove('license.txt')
             basedir = os.path.join(outdir, list(dirnames)[0])
             copytree(basedir, outdir)
             # for f in os.listdir(basedir):
             #   shutil.copy2(os.path.join(basedir, f), outdir)
             shutil.rmtree(basedir)
         return True
-    except:
+    except Exception, e:
+        print e
         copytree(tmppath, outdir)
         return False
     
@@ -149,10 +153,9 @@ def main(url, name, outdir, force, allow_nesting, internaldir, searchonly, githu
     if status:
         mdir = find_mfile_dir(pckdir, internaldir)
         print 'Installed "{1}" to {0}'.format(pckdir, name)
-        print 'Will add "{0}" to path.'.format(mdir)
-        mpmfile = os.path.join(outdir, 'mpm.json')
+        print 'Will add "{0}" to path.'.format(mdir)       
         data = {'name': name, 'url': url, 'date_downloaded': str(datetime.now()), 'mdir': mdir}
-        write_to_mpmfile(mpmfile, data)
+        write_to_mpmfile(outdir, data)
     else:
         print 'ERROR: Could not install "{0}"'.format(name)
 
@@ -229,7 +232,7 @@ if __name__ == '__main__':
         parser.print_help()
         for msg in msgs:
             print msg
-        sys.exit(1)
+        sys.exit(1)    
     if args.reqsfile:        
         load_from_file(args.reqsfile, args.installdir, args.force, args.searchonly, args.pythonexe)
     else:        

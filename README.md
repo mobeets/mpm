@@ -53,18 +53,26 @@ __Overwrite existing packages:__
 >> mpm -r /Users/mobeets/example/requirements.txt
 ```
 
-Specifying a requirements file lets you install multiple packages at once. Note that `mpm` requires the absolute path to your requirements file. `which('requirements.txt')` might help! The file should just be a list of package names and urls. See 'requirements-example.txt' for an example.
+Specifying a requirements file lets you install multiple packages at once. See 'requirements-example.txt' for an example. Make sure to provide an absolute path to the file!
 
 ## What it does
 
-By default, mpm will install all Matlab packages to the directory specified by `userpath`. You can edit `config.m` to specify a custom installation directory.
+By default, mpm will install all Matlab packages to the directory specified by `userpath`. You can edit `mpm_config.m` to specify a custom installation directory.
 
-If you restart Matlab, you'll want to call `mpmpaths` to re-add all the folders in the installation directory to your Matlab path. Better yet, just call `mpmpaths` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html). (Note that `mpmpaths` won't add any subfolders of packages.)
+If you restart Matlab, you'll want to call `mpm_paths` to re-add all the folders in the installation directory to your Matlab path. Better yet, just call `mpm_paths` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html).
 
-## Troubleshooting
+## Requirements
 
 To run the basic version of mpm you will need a working Python installation. I recommend [anaconda](https://www.continuum.io/downloads).
 
 To install repositories without specifying a url, you will also need the `lxml` and `PyGithub` packages (which you can install with `$ pip install ...`).
 
 Finally, make sure you set `PYTHON_EXE` in the `config.m` file appropriately.
+
+Note that `mpm` requires the absolute path to any files/directories.
+
+## Troubleshooting
+
+Because there's no standard directory structure for a Matlab package, automatically adding paths can get a bit messy. When mpm downloads a package, it adds a single folder within that package to your Matlab path. If there are no `*.m` files in the package's base directory, it looks in folders called 'bin', 'src', 'lib', or 'code' instead. You can specify the name of an internal directory by passing in an `-n` or `--internaldir` argument.
+
+Mpm keeps track of the packages its downloaded in a file called `mpm.json`.
