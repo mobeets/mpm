@@ -1,5 +1,13 @@
+import urllib2
 from lxml import etree
-from github import Github, GitRelease
+import imp
+
+try:
+    imp.find_module('github')
+    from github import Github
+except ImportError:
+    # dummy constructor
+    Github = lambda: True
 
 def find_github_repo(query, handle=None, release_tag=None):
     """
@@ -9,6 +17,9 @@ def find_github_repo(query, handle=None, release_tag=None):
     """
     if handle is None:
         handle = Github()
+    if not hasattr(handle, 'search_repositories'):
+        # PyGithub not installed
+        return
     rs = handle.search_repositories(query + 'language:matlab')
     try:
         repo = rs[0]
@@ -18,7 +29,9 @@ def find_github_repo(query, handle=None, release_tag=None):
         # find release with matching tag
         rels = [t for t in repo.get_tags() if t.name == release_tag]
         if rels:
-            return get_zipball_from_url(repo, rels[0].url)
+            return rels[0].zipball_url
+        else:
+            return
     try:
         # find latest release
         return get_zipball_from_url(repo, repo.url + '/releases/latest')
