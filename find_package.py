@@ -3,6 +3,11 @@ from lxml import etree
 import imp
 
 try:
+    imp.find_module('lxml')
+    from lxml import etree
+except ImportError:
+    etree = lambda: True
+try:
     imp.find_module('github')
     from github import Github
 except ImportError:
@@ -18,7 +23,7 @@ def find_github_repo(query, handle=None, release_tag=None):
     if handle is None:
         handle = Github()
     if not hasattr(handle, 'search_repositories'):
-        # PyGithub not installed
+        print 'WARNING: PyGithub cannot be found, so searching FileExchange is unavailable.'
         return
     rs = handle.search_repositories(query + 'language:matlab')
     try:
@@ -43,6 +48,10 @@ def get_zipball_from_url(repo, url):
     return data['zipball_url']
 
 def find_matlabcentral_repo(query):
+    if not hasattr(handle, 'search_repositories'):
+        # lxml not installed
+        print 'WARNING: lxml cannot be found, so searching FileExchange is unavailable.'
+        return
     query_html = urllib2.quote(query)
     url = 'http://www.mathworks.com/matlabcentral/fileexchange/?term={0}'.format(query_html)
     response = urllib2.urlopen(url)
