@@ -57,6 +57,7 @@ def write_to_mpmfile(outdir, data, filename='mpm.json'):
 M_DIR_ORDER = ['bin', 'src', 'lib', 'code']
 def find_mfile_dir(indir, internaldir=None, dirs_to_check=M_DIR_ORDER):
     mfls = glob.glob(os.path.join(indir, '*.m'))
+    mfls += glob.glob(os.path.join(indir, '+*'))
     if mfls: # .m files in main dir -- all is well
         if internaldir is not None:
             print 'WARNING: Ignoring internaldir "{0}"" because .m files were found in the base directory'.format(internaldir)
