@@ -90,12 +90,10 @@ def main(url, name, outdir, force, allow_nesting, internaldir, searchonly, githu
             else:
                 print "Could not find any package named '{0}' on Github with version {1}.".format(name, version)
             return
-        if searchonly:
-            print 'Package "{0}" found at "{1}". Not installing.'.format(name, url)
-            return
-        else:
-            print 'Package "{0}" found at "{1}".'.format(name, url)
-            return
+    print 'Package "{0}" found at "{1}".'.format(name, url)
+    if searchonly:
+        print 'Not installing "{0}" because user specified "searchonly".'.format(name)
+        return
     url = url.strip()
     name = name.strip()
     if not os.path.exists(outdir):
@@ -138,19 +136,20 @@ def load_from_file(infile, outdir, force, searchonly):
         extra_args += ' --searchonly'
     with open(infile) as f:
         for i, line in enumerate(f.readlines()):
+            if not line.strip(): # empty line
+                continue
             args = line.split()
             msgs = check_args_in_file(args, i+1)
             for msg in msgs:
                 print 'WARNING: ' + msg
             args += extra_args.split()
-            print ' '.join(args)
-            continue
             call(['python', mpmpath] + args)
 
 def check_args(args):
     msgs = []
     if not args.reqsfile and not args.name:
         msg = "Must provide a package name"
+        print args
         msgs.append(msg)
     if args.reqsfile and args.version:
         msg = "Specifying a version is not allowed when loading from requirements file."

@@ -43,7 +43,6 @@ def get_zipball_from_url(repo, url):
     return data['zipball_url']
 
 def find_matlabcentral_repo(query):
-    # http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
     query_html = urllib2.quote(query)
     url = 'http://www.mathworks.com/matlabcentral/fileexchange/?term={0}'.format(query_html)
     response = urllib2.urlopen(url)

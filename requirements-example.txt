@@ -1,3 +1,3 @@
-export-fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-cbrewer http://www.mathworks.com/matlabcentral/fileexchange/34087-cbrewer---colorbrewer-schemes-for-matlab
-matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
+export_fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
+matlab2tikz -v 1.0.0
+colorbrewer
