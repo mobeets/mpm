@@ -1,9 +1,12 @@
 import sys
+import glob
+import json
 import os.path
 import argparse
 import urllib2
 import shutil
 import tempfile
+from datetime import datetime
 from subprocess import call
 from StringIO import StringIO
 from zipfile import ZipFile
@@ -34,6 +37,46 @@ def readzip(url):
     # except urllib2.URLError, e:
     #     print e.args
     #     return
+
+def write_to_mpmfile(mpmfile, data):
+    if os.path.exists(mpmfile):
+        with open(mpmfile) as f:
+            objs = json.load(f)
+    else:
+        objs = []
+    cur_ind = [i for i,x in enumerate(objs) if x['name'] == data['name']]
+    if cur_ind:
+        print 'Overwriting entry for "{0}" in mpmfile'.format(data['name'])
+        objs[cur_ind[0]] = data
+    else:
+        objs.append(data)
+    with open(mpmfile, 'w') as f:
+        json.dump(objs, f, sort_keys=False, indent=4, separators=(',', ': '))
+
+M_DIR_ORDER = ['bin', 'src', 'lib', 'code']
+def find_mfile_dir(indir, internaldir=None, dirs_to_check=M_DIR_ORDER):
+    mfls = glob.glob(os.path.join(indir, '*.m'))
+    if mfls: # .m files in main dir -- all is well
+        if internaldir is not None:
+            print 'WARNING: Ignoring internaldir "{0}"" because .m files were found in the base directory'.format(internaldir)
+        return indir
+    if internaldir is not None:
+        cdir = os.path.join(indir, internaldir)
+        if not os.path.exists(cdir):
+            print 'WARNING: Ignoring internaldir "{0}"" because it did not exist.'.format(internaldir)
+        else:
+            dirs_to_check = [internaldir]
+    for cdir in dirs_to_check:
+        cdr = os.path.join(indir, cdir)
+        if not os.path.exists(cdr):
+            continue
+        if not glob.glob(os.path.join(cdr, '*.m')):
+            continue
+        # found a dir with .m files! keep this one
+        return cdr
+    # todo: search for any other dir with *.m in it
+    print 'WARNING: No .m files will be added to path'
+    return indir
 
 def unzip(url, outdir, allow_nesting):
     zipfile = readzip(url)
@@ -98,13 +141,18 @@ def main(url, name, outdir, force, allow_nesting, internaldir, searchonly, githu
     name = name.strip()
     if not os.path.exists(outdir):
         raise Exception("Invalid MATLABDIR: {0}".format(outdir))
-    outdir = os.path.join(outdir, name)
-    if os.path.exists(outdir) and not force:
-        print 'Package "{1}" already exists at {0}'.format(outdir, name)
+    pckdir = os.path.join(outdir, name)
+    if os.path.exists(pckdir) and not force:
+        print 'Package "{1}" already exists at {0}'.format(pckdir, name)
         return
-    status = unzip(url, outdir, allow_nesting)
+    status = unzip(url, pckdir, allow_nesting)
     if status:
-        print 'Installed "{1}" to {0}'.format(outdir, name)
+        mdir = find_mfile_dir(pckdir, internaldir)
+        print 'Installed "{1}" to {0}'.format(pckdir, name)
+        print 'Will add "{0}" to path.'.format(mdir)
+        mpmfile = os.path.join(outdir, 'mpm.json')
+        data = {'name': name, 'url': url, 'date_downloaded': str(datetime.now()), 'mdir': mdir}
+        write_to_mpmfile(mpmfile, data)
     else:
         print 'ERROR: Could not install "{0}"'.format(name)
 
