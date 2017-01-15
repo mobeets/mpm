@@ -1,60 +1,48 @@
-# Matlab Package Manager
+# Matlab Package Manager (mpm)
 
 A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/pip)). Downloads packages from Matlab Central's File Exchange, GitHub repositories, or any other url pointing to a .zip file.
 
 ## Setup
 
-__1)__ Clone this repository
-
-__2)__ Edit your `~/.bash_profile`
-
-```    
-MPM_MATLABPATH=$HOME/Documents/MATLAB
-export MPM_MATLABPATH
-alias mpm='python $HOME/mpm/main.py -o $MPM_MATLABPATH'
-```
-
-The `-o` option specifies where mpm should install its MATLAB packages.
-(If you didn't clone mpm to your home directory, make sure to correct the path in the `alias` definition above.)
-
-__3)__ Place the script `mpmpath.m` somewhere in your Matlab search [path](http://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html).
-
-__4)__ Call `mpmpath` in your Matlab [startup](http://www.mathworks.com/help/matlab/ref/startup.html) script, and after installing any packages using `mpm`.
+Clone this repo and add it to your Matlab path (using `addpath`).
 
 ## Usage
 
-__Install a single file__
+__Install a single package__
 
-From File Exchange:
+From Matlab File Exchange:
 
 ```
-$ mpm export_fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
+>> mpm export_fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
 ```
 
 From Github:
 
 ```
-$ mpm mASD -e https://github.com/mobeets/mASD.git
+>> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
 ```
 
-If the package already exists in the installation directory you can force `mpm` to overwrite it using `-f`.
+Note that for Github repos you must add the '.git' to the url.
+
+If the package already exists in the installation directory you can force mpm to overwrite it using `-f`.
 
 ```
-$ mpm mASD -e https://github.com/mobeets/mASD.git
-Package "mASD" already exists at /Users/mobeets/Documents/MATLAB/mASD
-$ mpm mASD -e https://github.com/mobeets/mASD.git -f
-Installed "mASD" to /Users/mobeets/Documents/MATLAB/mASD
+>> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git
+Package "matlab2tikz" already exists at /Users/mobeets/Documents/MATLAB/matlab2tikz
+>> mpm matlab2tikz https://github.com/matlab2tikz/matlab2tikz.git -f
+Installed "matlab2tikz" to /Users/mobeets/Documents/MATLAB/matlab2tikz
 ```
 
-__Install from list of requirements in file__
+__Install multiple packages using a requirements file__
 
 ```
-$ mpm -r requirements.txt
+>> mpm -r /Users/mobeets/example/requirements.txt
 ```
 
-Your requirements file should look something like this:
+Specifying a requirements file lets you install multiple packages at once. Note that `mpm` requires the absolute path to your requirements file. `which('requirements.txt')` might help! The file should just be a list of package names and urls. See 'requirements-example.txt' for an example.
 
-    export-fig -e http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig?download=true
-    gridfitdir -e http://www.mathworks.com/matlabcentral/fileexchange/downloads/9937/akamai/gridfitdir.zip
-    mASD -e https://github.com/mobeets/mASD.git
+## What it does
 
+By default, mpm will install all Matlab packages to the directory specified by `userpath`. You can edit `config.m` to specify a custom installation directory.
+
+If you restart Matlab, you'll want to call `mpmpaths` to re-add all the folders in the installation directory to your Matlab path. Better yet, just call `mpmpaths` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html). (Note that `mpmpaths` won't add any subfolders of packages.)
