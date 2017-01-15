@@ -4,7 +4,7 @@ A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/p
 
 ## Setup
 
-Clone this repo and add it to your Matlab path (using `addpath`).
+Download/clone this repo and add it to your Matlab path (using `addpath`).
 
 ## Usage
 
