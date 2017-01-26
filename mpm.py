@@ -106,6 +106,8 @@ def unzip(url, outdir, allow_nesting):
             if 'license.txt' in dirnames:
                 dirnames.remove('license.txt')
             basedir = os.path.join(outdir, list(dirnames)[0])
+            if not os.path.isdir(basedir):
+                return True
             copytree(basedir, outdir)
             # for f in os.listdir(basedir):
             #   shutil.copy2(os.path.join(basedir, f), outdir)

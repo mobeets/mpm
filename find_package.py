@@ -48,7 +48,7 @@ def get_zipball_from_url(repo, url):
     return data['zipball_url']
 
 def find_matlabcentral_repo(query):
-    if not hasattr(handle, 'search_repositories'):
+    if not hasattr(etree, 'HTML'):
         # lxml not installed
         print 'WARNING: lxml cannot be found, so searching FileExchange is unavailable.'
         return
