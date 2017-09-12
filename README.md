@@ -47,7 +47,7 @@ __Overwrite existing packages:__
 >> mpm matlab2tikz -f
 ```
 
-__Install to a directory:__
+__Install to a specific directory:__
 
 ```
 >> mpm matlab2tikz -i /Users/mobeets/mypath
