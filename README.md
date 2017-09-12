@@ -47,6 +47,14 @@ __Overwrite existing packages:__
 >> mpm matlab2tikz -f
 ```
 
+__Install to a directory:__
+
+```
+>> mpm matlab2tikz -i /Users/mobeets/mypath
+```
+
+Note that the default installation directory is specified by the MPM_INSTALL_DIR variable in `mpm_config.m`.
+
 ### Install multiple packages using a requirements file
 
 ```
