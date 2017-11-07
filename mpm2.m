@@ -16,33 +16,128 @@ function mpm2(action, varargin)
 % - SearchGithubFirst (-g): check github for url before matlab fileexchange
 % - Force (-f): install package even if name already exists in InstallDir
 % 
-    opts = parseArgs(action, varargin);
+    
+    opts = setDefaultOpts();
+    opts = parseArgs(opts, action, varargin);
     validateArgs(opts);
-    if isempty(opts.url) && isempty(opts.infile)
+    if ~isempty(opts.infile)
+        error('Installing from filename not yet supported.');
+        % need to read filename, and call mpm2 for all lines in this file
+    end
+    if isempty(opts.url)
+        % find url if not set
         opts.url = findUrl(opts);
-        disp(['For ''' opts.name ''', found url: ' opts.url]);
+        if ~isempty(opts.url)
+            disp(['For package named ''' opts.name ''', found url: ' ...
+                opts.url]);
+        end
     end
-    if strcmpi(opts.action, 'install')
-        installPackages(opts);
-        updatePaths(opts);
-        updateMetadata(opts);
+    if ~isempty(opts.url) && strcmpi(opts.action, 'install')
+        % download package and add to metadata
+        pkg = installPackage(opts);
+        if ~isempty(pkg)
+            updateMetadata(opts, pkg);
+            updatePaths(opts);
+        end
     end
+end
+
+function opts = setDefaultOpts()
+% load opts from config file, and then set additional defaults
+    opts = mpm_opts(); % load default opts from config file
+
+    opts.url = '';
+    opts.infile = '';
+    opts.installdir = opts.MPM_INSTALL_DIR;
+    opts.internaldir = '';
+    opts.releasetag = '';
+    opts.searchgithubfirst = false;
+    opts.force = false;    
 end
 
 function url = findUrl(opts)
+% find url by searching matlab fileexchange and github given opts.name
     url = ''; % must search here
+    if isempty(url)
+        disp(['Could not find url for package named ''' opts.name '''.']);
+    end
 end
 
-function installPackages(opts)
+function pkg = installPackage(opts)
+% install package by downloading url, unzipping, and finding paths to add
+
+    % todo: download url
+    % todo: unzip
+    % todo: find mdir (folder containing .m files that we will add to path)
+
+    pkg.name = opts.name;
+    pkg.url = opts.url;
+    pkg.date_downloaded = datestr(datetime);
+    pkg.mdir = '';
+    
+    pkg = [];
+end
+
+function updateMetadata(opts, pkg)
+% update metadata file to track all packages installed
+    metafile = fullfile(opts.installdir, 'mpm.mat');
+    if exist(metafile, 'file')
+        m = load(metafile);
+    else
+        m = struct();
+    end
+    if ~isfield(m, 'packages')
+        packages = [];
+    else
+        packages = m.packages;
+    end
+    packages = [packages pkg];
+    save(metafile, 'packages');
 end
 
 function updatePaths(opts)
+% read metadata file and add all paths listed
+    metafile = fullfile(opts.installdir, 'mpm.mat');
+    m = load(metafile);
+    pkgs = m.packages;
+    disp(['Found ' num2str(numel(pkgs)) ' package(s) in metadata.']);
+    
+    % add mdir to path for each packages in metadata
+    nmsAdded = {};
+    for ii = 1:numel(pkgs)
+        pkg = pkgs(ii);
+        if exist(pkg.mdir, 'dir')
+            addpath(pkg.mdir);
+            nmsAdded = [nmsAdded pkg.name];
+        end
+    end
+    disp(['Added paths for ' num2str(numel(nmsAdded)) ' package(s).']);
+    
+    % also add all folders listed in install_dir
+    if opts.HANDLE_ALL_PATHS_IN_INSTALL_DIR
+        c = updateAllPaths(opts.installdir, nmsAdded);
+        disp(['Added ' num2str(c) ' additional package(s).']);
+    end
 end
 
-function updateMetadata(opts)
+function c = updateAllPaths(installdir, nmsAlreadyAdded)
+% adds all directories inside installdir to path
+%   ignoring those already added
+% 
+    c = 0;
+    fs = dir(installdir); % get names of everything in install dir
+    fs = {fs([fs.isdir]).name}; % keep directories only
+    fs = fs(~strcmp(fs, '.') & ~strcmp(fs, '..')); % ignore '.' and '..'
+    for ii = 1:numel(fs)
+        f = fs{ii};
+        if ~ismember(f, nmsAlreadyAdded)
+            addpath(fullfile(installdir, f));
+            c = c + 1;
+        end
+    end
 end
 
-function opts = parseArgs(action, varargin)
+function opts = parseArgs(opts, action, varargin)
 % function p = parseArgs(action, varargin)
 % 
 
@@ -56,9 +151,8 @@ function opts = parseArgs(action, varargin)
     parse(q, action, varargin{:});
     
     % 
-    opts = q.Results;
+    opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
-    opts = rmfield(opts, 'remainingargs');
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'releasetag', 'searchgithubfirst', 'force', '-u', '-i', '-d', ...
         '-n', '-t', '-g', '-f'};
@@ -78,7 +172,6 @@ function opts = parseArgs(action, varargin)
     end
     
     % check for parameters, passed as name-value pairs
-    opts = setDefaultArgs(opts);
     usedNextArg = false;
     for ii = 1:numel(remainingArgs)
         curArg = remainingArgs{ii};
@@ -127,16 +220,6 @@ function nextArg = getNextArg(remainingArgs, ii, curArg)
     nextArg = remainingArgs{ii+1};
 end
 
-function opts = setDefaultArgs(opts)
-    opts.url = '';
-    opts.infile = '';
-    opts.installdir = '';
-    opts.internaldir = '';
-    opts.releasetag = '';
-    opts.searchgithubfirst = false;
-    opts.force = false;    
-end
-
 function isOk = validateArgs(opts)
     isOk = true;
     if isempty(opts.name) && isempty(opts.infile)
@@ -144,7 +227,7 @@ function isOk = validateArgs(opts)
     end
     if ~isempty(opts.infile)
         assert(isempty(opts.name), ...
-            'Cannot specify name if installing from filename');
+            'Cannot specify package name if installing from filename');
         assert(isempty(opts.url), ...
             'Cannot specify url if installing from filename');
         assert(isempty(opts.internaldir), ...

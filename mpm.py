@@ -238,5 +238,5 @@ if __name__ == '__main__':
         sys.exit(1)    
     if args.reqsfile:        
         load_from_file(args.reqsfile, args.installdir, args.force, args.searchonly, args.pythonexe)
-    else:        
+    else:
         main(args.url, args.name, args.installdir, args.force, args.allow_nesting, args.internaldir, args.searchonly, args.githubfirst, args.version)
