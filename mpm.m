@@ -2,7 +2,13 @@ function mpm(action, varargin)
 % function mpm(action, varargin)
 % 
 % positional arguments:
-%   action [required]: either 'install' or 'search'
+%   action [required]:
+%       - init: add all installed packages in default install directory to
+%       path
+%       - install: installs a package by name
+%       - uninstall: installs a package by name
+%       - search: finds a url for a package by name (searches Github and
+%       File Exchange)
 %   name [optional]: name of package (e.g., 'matlab2tikz')
 % 
 % name-value arguments:
@@ -37,6 +43,14 @@ function mpm(action, varargin)
     
     % load metadata
     [opts.metadata, opts.metafile] = getMetadata(opts);
+    
+    % init paths
+    if strcmpi(opts.action, 'init')
+        opts.update_mpm_paths = true;
+        pkg.addpath = false; % ignore dummy pkg
+        updatePaths(pkg, opts);
+        return;
+    end
     
     if strcmpi(opts.action, 'uninstall')
         removePackage(pkg, opts);
@@ -340,7 +354,7 @@ end
 
 function [ind, ix] = indexInMetadata(pkg, pkgs)
     if isempty(pkgs)
-        ind = [];
+        ind = []; ix = [];
         return;
     end
     ix = ismember({pkgs.name}, pkg.name);
@@ -440,16 +454,22 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
 
     % init matlab's input parser and read action
     q = inputParser;
-    validActions = {'install', 'search', 'uninstall'};
+    validActions = {'install', 'search', 'uninstall', 'init'};
     checkAction = @(x) any(validatestring(x, validActions));
     addRequired(q, 'action', checkAction);
     defaultName = '';
     addOptional(q, 'remainingargs', defaultName);
     parse(q, action, varargin{:});
-    
-    % 
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
+    
+    if strcmpi(opts.action, 'init')
+        if ~isempty(remainingArgs)
+            error('If running ''init'', no other arguments are needed.');
+        end
+        return;
+    end
+    
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', '--nopaths', ...
         '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
@@ -524,6 +544,9 @@ end
 
 function isOk = validateArgs(pkg, opts)
     isOk = true;
+    if strcmpi(opts.action, 'init')
+        return;
+    end
     if isempty(pkg.name) && isempty(opts.infile)
         error('You must specify a package name or a filename.');
     end
@@ -548,6 +571,9 @@ function isOk = validateArgs(pkg, opts)
             'Cannot specify release_tag if uninstalling');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst if uninstalling');
+    end
+    if strcmpi(opts.action, 'search')
+        assert(~opts.force, 'Nothing to force when searching.');
     end
 end
 
