@@ -1,8 +1,15 @@
-% directory where mpm will install all packages
-MPM_INSTALL_DIR = userpath;
+function opts = mpm_config()
 
-% should mpm handle paths for any packages in install dir?
-HANDLE_ALL_PATHS_IN_INSTALL_DIR = false;
+    opts = struct();
+    
+    % set default directory to install packages
+    curdir = fileparts(mfilename('fullpath'));
+    opts.DEFAULT_INSTALL_DIR = fullfile(curdir, 'mpm-packages');
+    
+    % search github before searching Matlab File Exchange?
+    opts.DEFAULT_CHECK_GITHUB_FIRST = false;
+    
+    % update all paths on each install?
+    opts.update_mpm_paths = false;    
 
-% path to python executable
-PYTHON_EXE = '~/anaconda/bin/python';
+end

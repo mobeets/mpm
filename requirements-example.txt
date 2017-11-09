@@ -1,3 +1,3 @@
-export_fig http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
-matlab2tikz -v 1.0.0
+export_fig -u http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
+matlab2tikz -t 1.0.0
 colorbrewer

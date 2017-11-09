@@ -1,3 +1,10 @@
 .DS_Store
 *.pyc
 *.m~
+_old/
+
+# exclude everything
+mpm-packages/*
+
+# exception to the rule
+!mpm-packages/.gitkeep
