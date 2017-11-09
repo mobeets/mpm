@@ -16,6 +16,7 @@ function mpm2(action, varargin)
 %   --githubfirst (-g): check github for url before matlab fileexchange
 %   --force (-f): install package even if name already exists in InstallDir
 %   --debug: do not install anything or update paths; just pretend
+%   --nopaths: do not add anything to path after installing
 % 
     
     % parse and validate command line args
@@ -27,8 +28,9 @@ function mpm2(action, varargin)
             'or added to metadata or paths.']);
     end    
     if ~isempty(opts.infile)
-        error('Installing from filename not yet supported.');
-        % need to read filename, and call mpm2 for all lines in this file
+        % read filename, and call mpm2 for all lines in this file
+        readRequirementsFile(opts.infile, opts);
+        return;        
     end
     
     % check metadata
@@ -36,17 +38,18 @@ function mpm2(action, varargin)
     % todo: update metadata by removing folders that no longer exist    
     
     % handle package
-    success = findAndSetupPackage(pkg, opts, true);
+    success = findAndSetupPackage(pkg, opts);
 end
 
-function success = findAndSetupPackage(pkg, opts, addPaths)    
+function success = findAndSetupPackage(pkg, opts)    
     success = true;
     pkg.installdir = fullfile(opts.installdir, pkg.name);
     disp(['Collecting ''' pkg.name '''...']);
     
     % check if exists
     if ~opts.force && isInMetadata(pkg, opts);
-        warning('   Package already exists. Will not download.');
+        warning(['   Package already exists. ' ...
+            'Re-run with --force to overwrite.']);
         success = false;
         return;
     end    
@@ -62,7 +65,7 @@ function success = findAndSetupPackage(pkg, opts, addPaths)
         pkg = installPackage(pkg, opts);
         if ~isempty(pkg)
             opts = addToMetadata(pkg, opts);
-            if addPaths
+            if pkg.addpath
                 disp('Updating paths...');
                 updatePaths(pkg, opts);
             end
@@ -76,6 +79,7 @@ function [pkg, opts] = setDefaultOpts()
     pkg.url = '';    
     pkg.internaldir = '';
     pkg.release_tag = '';
+    pkg.addpath = true;
     
     opts = mpm_opts(); % load default opts from config file
 %     opts.installdir = opts.MPM_INSTALL_DIR;
@@ -86,6 +90,7 @@ function [pkg, opts] = setDefaultOpts()
     opts.update_all_paths = false;
     opts.force = false;
     opts.debug = false;
+    opts.nopaths = false;
 end
 
 function url = findUrl(pkg, opts)
@@ -188,7 +193,7 @@ function pkg = installPackage(pkg, opts)
     
     % check for previous package
     if exist(pkg.installdir, 'dir') && ~opts.force
-        warning(['   Could not install because package already exists.']);
+        warning('   Could not install because folder already exists.');
         return;
     elseif exist(pkg.installdir, 'dir')
         % remove old directory
@@ -234,12 +239,17 @@ end
 function mdir = findMDirOfPackage(pkg)
 % todo: find mdir (folder containing .m files that we will add to path)
     
+    if ~pkg.addpath
+        mdir = '';
+        return;
+    end
     if ~isempty(pkg.internaldir)
         if exist(fullfile(pkg.installdir, pkg.internaldir), 'dir')
             mdir = opts.internaldir;
             return;
         else
-            warning('Ignoring internaldir because it did not exist in package.');
+            warning(['Ignoring internaldir because ' ...
+                'it did not exist in package.']);
         end
     end
     
@@ -350,6 +360,9 @@ end
 
 function success = updatePath(pkg, opts)
     success = false;
+    if ~pkg.addpath
+        return;
+    end
     pth = fullfile(pkg.installdir, pkg.mdir);
     if exist(pth, 'dir')
         success = true;
@@ -398,7 +411,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
-        'release_tag', '--githubfirst', '--force', ...
+        'release_tag', '--githubfirst', '--force', '--nopaths', ...
         '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
     
     % no additional args
@@ -451,10 +464,13 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
             opts.force = true;
         elseif strcmpi(curArg, '--debug')
             opts.debug = true;
+        elseif strcmpi(curArg, '--nopaths')
+            pkg.addpath = false;
+            opts.nopaths = true;
         else
             error(['Did not recognize argument ''' curArg '''.']);
         end
-    end 
+    end
 end
 
 function nextArg = getNextArg(remainingArgs, ii, curArg)
@@ -482,5 +498,62 @@ function isOk = validateArgs(pkg, opts)
             'Cannot specify release_tag if installing from filename');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst if installing from filename');
+    end
+end
+
+function readRequirementsFile(fnm, opts)
+    txt = fileread(fnm);
+    lines = strsplit(txt, '\n');
+    
+    % build list of commands to run
+    % and check for illegal params (note spaces)
+    illegalParams = {' -i ', ' infile ', ' installdir '};
+    cmds = {};    
+    for ii = 1:numel(lines)
+        line = lines{ii};
+        for jj = 1:numel(illegalParams)
+            if ~isempty(strfind(line, illegalParams{jj}))
+                error(['Line ' num2str(ii) ...
+                    ' in infile cannot contain ''' illegalParams{jj} ...
+                    '''. (Illegal arguments: ''-i'',' ...
+                    '''infile'',  ''installdir''.)']);
+            end
+        end
+        if opts.force && (~isempty(strfind(line, ' --force')) || ...
+                ~isempty(strfind(line, ' -f')))
+            error('Cannot set --force because it is in infile.');
+        end
+        if opts.nopaths && ~isempty(strfind(line, ' --nopaths'))
+            error('Cannot set --nopaths because it is in infile.');
+        end
+        if ~isempty(line)
+            cmd = [line ' --installdir ' opts.installdir];
+            if opts.force
+                cmd = [cmd ' --force'];
+            end
+            if opts.nopaths
+                cmd = [cmd ' --nopaths'];
+            end
+            cmds = [cmds cmd];
+        end
+    end
+    
+    % verify
+    disp('About to run the following commands: ');
+    for ii = 1:numel(cmds)
+        disp(['   mpm2 ' opts.action ' ' cmds{ii}]);
+    end
+    reply = input('Confirm (y/n)? ', 's');
+    if isempty(reply)
+        reply = 'y';
+    end
+    if ~strcmpi(reply(1), 'y')
+        disp('I saw nothing.');
+        return;
+    end
+    
+    % run all
+    for ii = 1:numel(cmds)
+        mpm2(opts.action, cmds{ii});
     end
 end
