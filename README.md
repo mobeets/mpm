@@ -2,11 +2,17 @@
 
 A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/pip)). Downloads packages from Matlab Central's File Exchange, GitHub repositories, or any other url pointing to a .zip file.
 
-## Setup
+## Quickstart
 
-Download/clone this repo and add it to your Matlab path (using `addpath`).
+Download/clone this repo and add it to your Matlab path (using `addpath`). Now try the following:
 
-## Usage
+- `mpm install [package-name]`: install package by name
+- `mpm uninstall [package-name]`: remove package, if installed
+- `mpm search [package-name]`: find url given package name
+- `mpm freeze`: lists all packages currently installed
+- `mpm init`: adds all installed packages to path (for running on Matlab startup)
+
+## More details
 
 ### Install a single package
 
