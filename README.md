@@ -8,9 +8,9 @@ Download/clone this repo and add it to your Matlab path (using `addpath`). Now t
 
 - `mpm install [package-name]`: install package by name
 - `mpm uninstall [package-name]`: remove package, if installed
-- `mpm search [package-name]`: find url given package name
+- `mpm search [package-name]`: search for package given name (checks Github and Matlab File Exchange)
 - `mpm freeze`: lists all packages currently installed
-- `mpm init`: adds all installed packages to path (for running on Matlab startup)
+- `mpm init`: adds all installed packages to path (run when Matlab starts up)
 
 ## More details
 
