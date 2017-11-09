@@ -8,6 +8,7 @@ function mpm(action, varargin)
 %       - install: installs a package by name
 %       - uninstall: installs a package by name
 %       - search: finds a url for a package by name (searches Github and
+%       - freeze: list all installed packages (optional: in installdir)
 %       File Exchange)
 %   name [optional]: name of package (e.g., 'matlab2tikz')
 % 
@@ -44,7 +45,7 @@ function mpm(action, varargin)
     % load metadata
     [opts.metadata, opts.metafile] = getMetadata(opts);
     
-    % init paths
+    % mpm init
     if strcmpi(opts.action, 'init')
         opts.update_mpm_paths = true;
         pkg.addpath = false; % ignore dummy pkg
@@ -52,12 +53,19 @@ function mpm(action, varargin)
         return;
     end
     
+    % mpm freeze
+    if strcmpi(opts.action, 'freeze')
+        listPackages(opts);
+        return;
+    end
+    
+    % mpm uninstall
     if strcmpi(opts.action, 'uninstall')
         removePackage(pkg, opts);
         return;
     end
     
-    % handle package
+    % mpm search OR mpm install
     findAndSetupPackage(pkg, opts);
 end
 
@@ -136,10 +144,28 @@ function removePackage(pkg, opts)
     disp('Uninstallation complete.');
 end
 
+function listPackages(opts)
+    pkgs = opts.metadata.packages;
+    if isempty(pkgs)
+        disp(['No packages currently installed to ' opts.installdir]);
+        return;
+    end
+    disp(['Packages currently installed to ' opts.installdir ':']);
+    for ii = 1:numel(pkgs)
+        pkg = pkgs(ii);
+        nm = pkg.name;
+        if ~isempty(pkg.release_tag)
+            nm = [nm '==' pkg.release_tag];
+        end
+        disp(['- ' nm]);
+    end
+end
+
 function [pkg, opts] = setDefaultOpts()
 % load opts from config file, and then set additional defaults    
 
     % empty package
+    pkg.name = '';
     pkg.url = '';    
     pkg.internaldir = '';
     pkg.release_tag = '';
@@ -469,7 +495,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
 
     % init matlab's input parser and read action
     q = inputParser;
-    validActions = {'install', 'search', 'uninstall', 'init'};
+    validActions = {'install', 'search', 'uninstall', 'init', 'freeze'};
     checkAction = @(x) any(validatestring(x, validActions));
     addRequired(q, 'action', checkAction);
     defaultName = '';
@@ -491,7 +517,11 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     
     % no additional args
     if numel(remainingArgs) == 0
-        error('You must specify a package name or a filename.');
+        if strcmpi(opts.action, 'freeze')
+            return;
+        else
+            error('You must specify a package name or a filename.');
+        end
     end
     
     % if first arg is not a param name, it's the package name
@@ -563,7 +593,9 @@ function isOk = validateArgs(pkg, opts)
         return;
     end
     if isempty(pkg.name) && isempty(opts.infile)
-        error('You must specify a package name or a filename.');
+        if ~strcmpi(opts.action, 'freeze')
+            error('You must specify a package name or a filename.');
+        end
     end
     if ~isempty(opts.infile)
         assert(isempty(pkg.name), ...
@@ -589,6 +621,17 @@ function isOk = validateArgs(pkg, opts)
     end
     if strcmpi(opts.action, 'search')
         assert(~opts.force, 'Nothing to force when searching.');
+    end
+    if strcmpi(opts.action, 'freeze')
+        assert(~opts.force, 'Nothing to force when running ''freeze''.');
+        assert(isempty(pkg.url), ...
+            'Cannot specify url when running ''freeze''');
+        assert(isempty(pkg.internaldir), ...
+            'Cannot specify internaldir when running ''freeze''');
+        assert(isempty(pkg.release_tag), ...
+            'Cannot specify release_tag when running ''freeze''');
+        assert(~opts.searchgithubfirst, ...
+            'Cannot set searchgithubfirst when running ''freeze''');
     end
 end
 
