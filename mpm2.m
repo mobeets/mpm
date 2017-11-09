@@ -45,9 +45,9 @@ function mpm2(action, varargin)
         pkg = installPackage(opts);
         if ~isempty(pkg)
             disp(['   Adding package to metadata in ' opts.metafile]);
-%             updateMetadata(opts, pkg);
+            opts = updateMetadata(opts, pkg);
             disp('Updating paths...');
-%             updatePaths(opts);
+            updatePaths(pkg, opts);
         end
     end
 end
@@ -64,6 +64,7 @@ function opts = setDefaultOpts()
     opts.internaldir = '';
     opts.release_tag = '';
     opts.searchgithubfirst = false;
+    opts.update_all_paths = false;
     opts.force = false;
     opts.debug = false;
 end
@@ -217,6 +218,31 @@ end
 
 function mdir = findMDirOfPackage(pkg)
 % todo: find mdir (folder containing .m files that we will add to path)
+    
+    if ~isempty(pkg.internaldir)
+        if exist(fullfile(pkg.installdir, pkg.internaldir), 'dir')
+            mdir = opts.internaldir;
+            return;
+        else
+            warning('Ignoring internaldir because it did not exist in package.');
+        end
+    end
+    
+	fnms = dir(fullfile(pkg.installdir, '*.m'));
+    if ~isempty(fnms)
+        mdir = ''; % all is well; *.m files exist in base directory
+    else
+        M_DIR_ORDER = {'bin', 'src', 'lib', 'code'};
+        for ii = 1:numel(M_DIR_ORDER)
+            fnms = dir(fullfile(pkg.installdir, M_DIR_ORDER{ii}, '*.m'));
+            if ~isempty(fnms)
+                mdir = M_DIR_ORDER{ii};
+                return;
+            end
+        end
+    end
+    warning(['Could not find folder with .m files. ' ...
+        'May need to manually add files to path.']);
     mdir = '';
 end
 
@@ -250,38 +276,57 @@ function isOk = checkMetadata(opts)
             isOk = false;
         end
     end
+    % todo: confirm metadata is updated
+    % e.g., folder could have been deleted but still exist in metadata
 end
 
-function updateMetadata(opts, pkg)
+function opts = updateMetadata(opts, pkg)
 % update metadata file to track all packages installed
-    packages = [opts.metadata.packages pkg];    
+    packages = [opts.metadata.packages pkg];
+    opts.metadata.packages = packages;
     if ~opts.debug        
-        save(metafile, 'packages');
+        save(opts.metafile, 'packages');
     end
 end
 
-function updatePaths(opts)
+function updatePaths(pkg, opts)
 % read metadata file and add all paths listed
-    pkgs = opts.metadata.packages;
-    disp(['   Found ' num2str(numel(pkgs)) ' package(s) in metadata.']);
     
-    % add mdir to path for each packages in metadata
+    % add mdir to path for current package
     nmsAdded = {};
-    for ii = 1:numel(pkgs)
-        pkg = pkgs(ii);
-        if exist(pkg.mdir, 'dir') && ~isempty(pkg.mdir)
-            if ~opts.debug
-                addpath(pkg.mdir);
+    success = updatePath(pkg, opts);
+    if success
+        nmsAdded = [nmsAdded pkg.name];
+    end
+    
+    % add mdir to path for each package in metadata (optional)
+    if opts.update_all_paths
+        pkgs = opts.metadata.packages;
+        for ii = 1:numel(pkgs)
+            success = updatePath(pkgs(ii), opts);
+            if success
+                nmsAdded = [nmsAdded pkgs(ii).name];
             end
-            nmsAdded = [nmsAdded pkg.name];
         end
     end
     disp(['   Added paths for ' num2str(numel(nmsAdded)) ' package(s).']);
     
-    % also add all folders listed in install_dir
+    % also add all folders listed in install_dir (optional)
     if opts.HANDLE_ALL_PATHS_IN_INSTALL_DIR
         c = updateAllPaths(opts, nmsAdded);
         disp(['   Added ' num2str(c) ' additional package(s).']);
+    end
+end
+
+function success = updatePath(pkg, opts)
+    success = false;
+    pth = fullfile(pkg.installdir, pkg.mdir);
+    if exist(pth, 'dir')
+        success = true;
+        if ~opts.debug
+            disp(['   Adding ' pth]);
+            addpath(pth);
+        end
     end
 end
 
@@ -297,7 +342,8 @@ function c = updateAllPaths(opts, nmsAlreadyAdded)
         f = fs{ii};
         if ~ismember(f, nmsAlreadyAdded)
             if ~opts.debug
-                addpath(fullfile(opts.installdir, f));
+                pth = fullfile(opts.installdir, f);
+                addpath(pth);
             end
             c = c + 1;
         end
