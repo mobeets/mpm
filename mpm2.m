@@ -33,37 +33,39 @@ function mpm2(action, varargin)
     
     % check metadata
     [opts.metadata, opts.metafile] = getMetadata(opts);
-    isOk = checkMetadata(pkg, opts);
-    % todo: confirm metadata is updated
-    %   e.g., folder could have been deleted but still exist in metadata
-    % todo: if forcing overwrite, need to remove the old entries
-    if ~isOk
-        return;
-    end
+    % todo: update metadata by removing folders that no longer exist    
     
     % handle package
-    success = findAndSetupPackage(pkg, opts);
+    success = findAndSetupPackage(pkg, opts, true);
 end
 
-function success = findAndSetupPackage(pkg, opts)    
-    
-    pkg.installdir = fullfile(opts.installdir, pkg.name);
-    
+function success = findAndSetupPackage(pkg, opts, addPaths)    
     success = true;
+    pkg.installdir = fullfile(opts.installdir, pkg.name);
     disp(['Collecting ''' pkg.name '''...']);
+    
+    % check if exists
+    if ~opts.force && isInMetadata(pkg, opts);
+        warning('   Package already exists. Will not download.');
+        success = false;
+        return;
+    end    
+    
+    % find url if not set
     if isempty(pkg.url)
-        % find url if not set
         pkg.url = findUrl(pkg, opts);
     end
-    if ~isempty(pkg.url) && strcmpi(opts.action, 'install')
-        % download package and add to metadata
+    
+    % download package and add to metadata
+    if ~isempty(pkg.url) && strcmpi(opts.action, 'install')        
         disp(['   Downloading ' pkg.url '...']);
         pkg = installPackage(pkg, opts);
         if ~isempty(pkg)
-            disp(['   Adding package to metadata in ' opts.metafile]);
-            opts = updateMetadata(pkg, opts);
-            disp('Updating paths...');
-            updatePaths(pkg, opts);
+            opts = addToMetadata(pkg, opts);
+            if addPaths
+                disp('Updating paths...');
+                updatePaths(pkg, opts);
+            end
         end
     end
 end
@@ -190,6 +192,7 @@ function pkg = installPackage(pkg, opts)
         return;
     elseif exist(pkg.installdir, 'dir')
         % remove old directory
+        disp('   Removing previous version from disk.');
         rmdir(pkg.installdir, 's');
     end
     
@@ -268,31 +271,48 @@ function [m, metafile] = getMetadata(opts)
     if ~isfield(m, 'packages')
         m.packages = [];
     end
+    pkgs = m.packages;
+    clean_pkgs = [];
+    for ii = 1:numel(pkgs)
+        pth = fullfile(pkgs(ii).installdir, pkgs(ii).mdir);
+        if exist(pth, 'dir')
+            clean_pkgs = [clean_pkgs pkgs(ii)];
+        end
+    end
+    m.packages = clean_pkgs;
 end
 
-function isOk = checkMetadata(pkg, opts)
-    isOk = true;
+function doQuit = isInMetadata(pkg, opts)
+    doQuit = false;
     pkgs = opts.metadata.packages;
     if isempty(pkgs)
         return;
     end
-    ix = ismember({pkgs.name}, pkg.name);
-    dpkgs = pkgs(ix);
-    for ii = 1:numel(dpkgs)
-        if opts.force
-            disp(['Package named ''' pkg.name ...
-                ''' already exists. Overwriting.']);
-        else
-            warning(['Package named ''' pkg.name ...
-                ''' already exists. Will not download.']);
-            isOk = false;
-        end
-    end    
+    if any(ismember({pkgs.name}, pkg.name))
+        doQuit = true;
+    end
 end
 
-function opts = updateMetadata(pkg, opts)
+function opts = addToMetadata(pkg, opts)
 % update metadata file to track all packages installed
-    packages = [opts.metadata.packages pkg];
+    pkgs = opts.metadata.packages;
+    if ~isempty(pkgs)
+        ix = ismember({pkgs.name}, pkg.name);
+    else
+        ix = 0;
+    end
+    if sum(ix) > 0
+        assert(sum(ix) == 1);
+        ind = find(ix, 1, 'first');
+        pkgs = [pkgs(1:(ind-1)) pkgs(ind+1:end)];
+        disp(['   Removing previous version from metadata in  ' ...
+            opts.metafile]);
+    end
+    disp(['   Adding package to metadata in ' opts.metafile]);
+    pkgs = [pkgs pkg];
+    
+    % write to file
+    packages = pkgs;
     opts.metadata.packages = packages;
     if ~opts.debug        
         save(opts.metafile, 'packages');
@@ -324,7 +344,7 @@ function updatePaths(pkg, opts)
     % also add all folders listed in install_dir (optional)
     if opts.HANDLE_ALL_PATHS_IN_INSTALL_DIR
         c = updateAllPaths(opts, nmsAdded);
-        disp(['   Added ' num2str(c) ' additional package(s).']);
+        disp(['   Added paths for ' num2str(c) ' additional package(s).']);
     end
 end
 
@@ -334,7 +354,7 @@ function success = updatePath(pkg, opts)
     if exist(pth, 'dir')
         success = true;
         if ~opts.debug
-            disp(['   Adding ' pth]);
+            disp(['   Adding to path: ' pth]);
             addpath(pth);
         end
     end
@@ -351,8 +371,9 @@ function c = updateAllPaths(opts, nmsAlreadyAdded)
     for ii = 1:numel(fs)
         f = fs{ii};
         if ~ismember(f, nmsAlreadyAdded)
-            if ~opts.debug
+            if ~opts.debug                
                 pth = fullfile(opts.installdir, f);
+                disp(['   Adding to path: ' pth]);
                 addpath(pth);
             end
             c = c + 1;
