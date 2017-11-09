@@ -2,7 +2,7 @@
 MPM_INSTALL_DIR = userpath;
 
 % should mpm handle paths for any packages in install dir?
-HANDLE_ALL_PATHS_IN_INSTALL_DIR = true;
+HANDLE_ALL_PATHS_IN_INSTALL_DIR = false;
 
 % path to python executable
 PYTHON_EXE = '~/anaconda/bin/python';

@@ -10,7 +10,7 @@ function mpm2(action, varargin)
 % - Infile (-i): if set, will run mpm2 on all packages in requirements file
 % - InstallDir (-d): where to install package
 % - InternalDir (-n): lets user set which directories inside package to add to path
-% - ReleaseTag (-t): if url is found on github, this lets user set release tag
+% - release_tag (-t): if url is found on github, this lets user set release tag
 
 % arguments, if passed, are true:
 % - SearchGithubFirst (-g): check github for url before matlab fileexchange
@@ -20,7 +20,7 @@ function mpm2(action, varargin)
     opts = setDefaultOpts();
     opts = parseArgs(opts, action, varargin);
     if opts.debug
-        warning(['Debug mode. No packages will be installed, ' ...
+        warning(['Debug mode. No packages will actually be installed, ' ...
             'or added to metadata or paths.']);
     end
     validateArgs(opts);
@@ -28,7 +28,8 @@ function mpm2(action, varargin)
         error('Installing from filename not yet supported.');
         % need to read filename, and call mpm2 for all lines in this file
     end
-    opts.metadata = getMetadata(opts);
+    disp(['Collecting ''' opts.name '''...']);
+    [opts.metadata, opts.metafile] = getMetadata(opts);
     isOk = checkMetadata(opts);
     if ~isOk
         return;
@@ -39,9 +40,12 @@ function mpm2(action, varargin)
     end
     if ~isempty(opts.url) && strcmpi(opts.action, 'install')
         % download package and add to metadata
+        disp(['   Downloading ' opts.url '...']);
         pkg = installPackage(opts);
         if ~isempty(pkg)
+            disp(['   Adding package to metadata in ' opts.metafile]);
             updateMetadata(opts, pkg);
+            disp('Updating paths...');
             updatePaths(opts);
         end
     end
@@ -55,7 +59,7 @@ function opts = setDefaultOpts()
     opts.infile = '';
     opts.installdir = opts.MPM_INSTALL_DIR;
     opts.internaldir = '';
-    opts.releasetag = '';
+    opts.release_tag = '';
     opts.searchgithubfirst = false;
     opts.force = false;
     opts.debug = false;
@@ -63,8 +67,8 @@ end
 
 function url = findUrl(opts)
 % find url by searching matlab fileexchange and github given opts.name
-    url = ''; % must search here
-    if ~isempty(opts.releasetag) % tag set, so search github only
+
+    if ~isempty(opts.release_tag) % tag set, so search github only
         url = findUrlOnGithub(opts);
     elseif opts.searchgithubfirst
         url = findUrlOnGithub(opts);
@@ -78,9 +82,9 @@ function url = findUrl(opts)
         end
     end
     if isempty(url)
-        disp(['Could not find url for package named ''' opts.name '''.']);
+        disp('   Could not find url.');
     else
-        disp(['For package named ''' opts.name ''', found url: ' opts.url]);
+        disp(['   Found url: ' url]);
     end
 end
 
@@ -97,14 +101,53 @@ function url = findUrlOnFileExchange(opts)
     
     % return first result
     if ~isempty(tokens)
-        url = tokens{1};
+        url = tokens{1}{1};
     else
         url = '';
     end
 end
 
 function url = findUrlOnGithub(opts)
+% searches github for matlab repositories
+%   - if release_tag is set, get url of release that matches
+%   - otherwise, get url ofmost recent release
+%   - and if no releases exist, get url of most recent commit
+%
+
     url = '';
+    
+    % query github for matlab repositories, sorted by stars
+    q_url = 'https://api.github.com/search/repositories';
+    html = webread(q_url, 'q', opts.name, 'language', 'matlab', ...
+        'sort', 'stars', 'order', 'desc');
+    if isempty(html) || ~isfield(html, 'items') || isempty(html.items)
+        return;
+    end
+
+    % take first repo
+    item = html.items(1);
+    
+    if ~isempty(opts.release_tag)
+        % if release tag set, return the release matching this tag
+        res = webread(item.tags_url);
+        if isempty(res) || ~isfield(res, 'zipball_url')
+            return;
+        end
+        ix = strcmpi({res.name}, opts.release_tag);
+        if sum(ix) == 0
+            return;
+        end
+        ind = find(ix, 1, 'first');
+        url = res(ind).zipball_url;
+    else
+        rel_url = [item.url '/releases/latest'];
+        res = webread(rel_url);
+        if ~isempty(res) && isfield(res, 'zipball_url')
+            url = res.zipball_url;
+        else
+            url = [item.html_url '/zipball/master']; % if no releases found
+        end
+    end
 end
 
 function pkg = installPackage(opts)
@@ -125,7 +168,7 @@ function pkg = installPackage(opts)
     
 end
 
-function m = getMetadata(opts)
+function [m, metafile] = getMetadata(opts)
     metafile = fullfile(opts.installdir, 'mpm.mat');
     if exist(metafile, 'file')
         m = load(metafile);
@@ -156,8 +199,8 @@ end
 
 function updateMetadata(opts, pkg)
 % update metadata file to track all packages installed
-    packages = [opts.metadata.packages pkg];
-    if ~opts.debug
+    packages = [opts.metadata.packages pkg];    
+    if ~opts.debug        
         save(metafile, 'packages');
     end
 end
@@ -165,7 +208,7 @@ end
 function updatePaths(opts)
 % read metadata file and add all paths listed
     pkgs = opts.metadata.packages;
-    disp(['Found ' num2str(numel(pkgs)) ' package(s) in metadata.']);
+    disp(['   Found ' num2str(numel(pkgs)) ' package(s) in metadata.']);
     
     % add mdir to path for each packages in metadata
     nmsAdded = {};
@@ -178,12 +221,12 @@ function updatePaths(opts)
             nmsAdded = [nmsAdded pkg.name];
         end
     end
-    disp(['Added paths for ' num2str(numel(nmsAdded)) ' package(s).']);
+    disp(['   Added paths for ' num2str(numel(nmsAdded)) ' package(s).']);
     
     % also add all folders listed in install_dir
     if opts.HANDLE_ALL_PATHS_IN_INSTALL_DIR
         c = updateAllPaths(opts, nmsAdded);
-        disp(['Added ' num2str(c) ' additional package(s).']);
+        disp(['   Added ' num2str(c) ' additional package(s).']);
     end
 end
 
@@ -223,7 +266,7 @@ function opts = parseArgs(opts, action, varargin)
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
-        'releasetag', 'searchgithubfirst', 'force', '-u', '-i', '-d', ...
+        'release_tag', 'searchgithubfirst', 'force', '-u', '-i', '-d', ...
         '-n', '-t', '-g', '-f', 'debug'};
     
     % no additional args
@@ -265,9 +308,9 @@ function opts = parseArgs(opts, action, varargin)
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.internaldir = nextArg;
             usedNextArg = true;
-        elseif strcmpi(curArg, 'ReleaseTag') || strcmpi(curArg, '-t')
+        elseif strcmpi(curArg, 'release_tag') || strcmpi(curArg, '-t')
             nextArg = getNextArg(remainingArgs, ii, curArg);
-            opts.releasetag = nextArg;
+            opts.release_tag = nextArg;
             usedNextArg = true;
         elseif strcmpi(curArg, 'SearchGithubFirst') || ...
                 strcmpi(curArg, '-g')
@@ -303,8 +346,8 @@ function isOk = validateArgs(opts)
             'Cannot specify url if installing from filename');
         assert(isempty(opts.internaldir), ...
             'Cannot specify internaldir if installing from filename');
-        assert(isempty(opts.releasetag), ...
-            'Cannot specify releasetag if installing from filename');
+        assert(isempty(opts.release_tag), ...
+            'Cannot specify release_tag if installing from filename');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst if installing from filename');
     end
