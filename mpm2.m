@@ -7,7 +7,7 @@ function mpm2(action, varargin)
 % 
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
-%   infile (-i): if set, will run mpm2 on all packages in requirements file
+%   infile (-i): if set, will run mpm2 on all packages listed in file
 %   installdir (-d): where to install package
 %   internaldir (-n): lets user set which directories inside package to add to path
 %   release_tag (-t): if url is found on github, this lets user set release tag
@@ -18,71 +18,88 @@ function mpm2(action, varargin)
 %   --debug: do not install anything or update paths; just pretend
 % 
     
-    opts = setDefaultOpts();
-    opts = parseArgs(opts, action, varargin);
+    % parse and validate command line args
+    [pkg, opts] = setDefaultOpts();
+    [pkg, opts] = parseArgs(pkg, opts, action, varargin);
+    validateArgs(pkg, opts);
     if opts.debug
         warning(['Debug mode. No packages will actually be installed, ' ...
             'or added to metadata or paths.']);
-    end
-    validateArgs(opts);
+    end    
     if ~isempty(opts.infile)
         error('Installing from filename not yet supported.');
         % need to read filename, and call mpm2 for all lines in this file
     end
-    disp(['Collecting ''' opts.name '''...']);
+    
+    % check metadata
     [opts.metadata, opts.metafile] = getMetadata(opts);
-    isOk = checkMetadata(opts);
+    isOk = checkMetadata(pkg, opts);
+    % todo: confirm metadata is updated
+    %   e.g., folder could have been deleted but still exist in metadata
+    % todo: if forcing overwrite, need to remove the old entries
     if ~isOk
         return;
     end
-    if isempty(opts.url)
+    
+    % handle package
+    success = findAndSetupPackage(pkg, opts);
+end
+
+function success = findAndSetupPackage(pkg, opts)    
+    
+    pkg.installdir = fullfile(opts.installdir, pkg.name);
+    
+    success = true;
+    disp(['Collecting ''' pkg.name '''...']);
+    if isempty(pkg.url)
         % find url if not set
-        opts.url = findUrl(opts);
+        pkg.url = findUrl(pkg, opts);
     end
-    if ~isempty(opts.url) && strcmpi(opts.action, 'install')
+    if ~isempty(pkg.url) && strcmpi(opts.action, 'install')
         % download package and add to metadata
-        disp(['   Downloading ' opts.url '...']);
-        pkg = installPackage(opts);
+        disp(['   Downloading ' pkg.url '...']);
+        pkg = installPackage(pkg, opts);
         if ~isempty(pkg)
             disp(['   Adding package to metadata in ' opts.metafile]);
-            opts = updateMetadata(opts, pkg);
+            opts = updateMetadata(pkg, opts);
             disp('Updating paths...');
             updatePaths(pkg, opts);
         end
     end
 end
 
-function opts = setDefaultOpts()
-% load opts from config file, and then set additional defaults
-    opts = mpm_opts(); % load default opts from config file
+function [pkg, opts] = setDefaultOpts()
+% load opts from config file, and then set additional defaults    
 
-    opts.url = '';
-    opts.infile = '';
+    pkg.url = '';    
+    pkg.internaldir = '';
+    pkg.release_tag = '';
+    
+    opts = mpm_opts(); % load default opts from config file
 %     opts.installdir = opts.MPM_INSTALL_DIR;
     cdir = fileparts(mfilename('fullpath'));
     opts.installdir = fullfile(cdir, 'site-packages');
-    opts.internaldir = '';
-    opts.release_tag = '';
+    opts.infile = '';
     opts.searchgithubfirst = false;
     opts.update_all_paths = false;
     opts.force = false;
     opts.debug = false;
 end
 
-function url = findUrl(opts)
+function url = findUrl(pkg, opts)
 % find url by searching matlab fileexchange and github given opts.name
 
-    if ~isempty(opts.release_tag) % tag set, so search github only
-        url = findUrlOnGithub(opts);
+    if ~isempty(pkg.release_tag) % tag set, so search github only
+        url = findUrlOnGithub(pkg);
     elseif opts.searchgithubfirst
-        url = findUrlOnGithub(opts);
+        url = findUrlOnGithub(pkg);
         if isempty(url) % if nothing found, try file exchange
-            url = findUrlOnFileExchange(opts);
+            url = findUrlOnFileExchange(pkg);
         end
     else
-        url = findUrlOnFileExchange(opts);
+        url = findUrlOnFileExchange(pkg);
         if isempty(url) % if nothing found, try github
-            url = findUrlOnGithub(opts);
+            url = findUrlOnGithub(pkg);
         end
     end
     if isempty(url)
@@ -92,12 +109,12 @@ function url = findUrl(opts)
     end
 end
 
-function url = findUrlOnFileExchange(opts)
+function url = findUrlOnFileExchange(pkg)
 % search file exchange, and return first search result
 
     % query file exchange
     base_url = 'http://www.mathworks.com/matlabcentral/fileexchange/';
-    html = webread(base_url, 'term', opts.name);
+    html = webread(base_url, 'term', pkg.name);
     
     % extract all hrefs from '<a href="*" class="results_title">'
     expr = 'class="results_title"[^>]*href="([^"]*)"[^>]*|href="([^"]*)"[^>]*class="results_title"';
@@ -112,7 +129,7 @@ function url = findUrlOnFileExchange(opts)
     end
 end
 
-function url = findUrlOnGithub(opts)
+function url = findUrlOnGithub(pkg)
 % searches github for matlab repositories
 %   - if release_tag is set, get url of release that matches
 %   - otherwise, get url ofmost recent release
@@ -123,7 +140,7 @@ function url = findUrlOnGithub(opts)
     
     % query github for matlab repositories, sorted by stars
     q_url = 'https://api.github.com/search/repositories';
-    html = webread(q_url, 'q', opts.name, 'language', 'matlab', ...
+    html = webread(q_url, 'q', pkg.name, 'language', 'matlab', ...
         'sort', 'stars', 'order', 'desc');
     if isempty(html) || ~isfield(html, 'items') || isempty(html.items)
         return;
@@ -132,13 +149,13 @@ function url = findUrlOnGithub(opts)
     % take first repo
     item = html.items(1);
     
-    if ~isempty(opts.release_tag)
+    if ~isempty(pkg.release_tag)
         % if release tag set, return the release matching this tag
         res = webread(item.tags_url);
         if isempty(res) || ~isfield(res, 'zipball_url')
             return;
         end
-        ix = strcmpi({res.name}, opts.release_tag);
+        ix = strcmpi({res.name}, pkg.release_tag);
         if sum(ix) == 0
             return;
         end
@@ -160,14 +177,9 @@ function url = findUrlOnGithub(opts)
     end
 end
 
-function pkg = installPackage(opts)
+function pkg = installPackage(pkg, opts)
 % install package by downloading url, unzipping, and finding paths to add    
-
-    pkg.name = opts.name;
-    pkg.url = opts.url;
-    pkg.installdir = fullfile(opts.installdir, opts.name);
-    pkg.internaldir = opts.internaldir;
-    pkg.release_tag = opts.release_tag;
+    
     if opts.debug
         return;
     end
@@ -258,29 +270,27 @@ function [m, metafile] = getMetadata(opts)
     end
 end
 
-function isOk = checkMetadata(opts)
+function isOk = checkMetadata(pkg, opts)
     isOk = true;
     pkgs = opts.metadata.packages;
     if isempty(pkgs)
         return;
     end
-    ix = ismember({pkgs.name}, opts.name);
+    ix = ismember({pkgs.name}, pkg.name);
     dpkgs = pkgs(ix);
     for ii = 1:numel(dpkgs)
         if opts.force
-            disp(['Package named ''' opts.name ...
+            disp(['Package named ''' pkg.name ...
                 ''' already exists. Overwriting.']);
         else
-            warning(['Package named ''' opts.name ...
+            warning(['Package named ''' pkg.name ...
                 ''' already exists. Will not download.']);
             isOk = false;
         end
-    end
-    % todo: confirm metadata is updated
-    % e.g., folder could have been deleted but still exist in metadata
+    end    
 end
 
-function opts = updateMetadata(opts, pkg)
+function opts = updateMetadata(pkg, opts)
 % update metadata file to track all packages installed
     packages = [opts.metadata.packages pkg];
     opts.metadata.packages = packages;
@@ -350,7 +360,7 @@ function c = updateAllPaths(opts, nmsAlreadyAdded)
     end
 end
 
-function opts = parseArgs(opts, action, varargin)
+function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
 % function p = parseArgs(action, varargin)
 % 
 
@@ -378,10 +388,10 @@ function opts = parseArgs(opts, action, varargin)
     % if first arg is not a param name, it's the package name
     nextArg = remainingArgs{1};
     if ~ismember(lower(nextArg), lower(allParams))
-        opts.name = nextArg;
+        pkg.name = nextArg;
         remainingArgs = remainingArgs(2:end);
     else
-        opts.name = '';
+        pkg.name = '';
     end
     
     % check for parameters, passed as name-value pairs
@@ -395,7 +405,7 @@ function opts = parseArgs(opts, action, varargin)
         usedNextArg = false;
         if strcmpi(curArg, 'url') || strcmpi(curArg, '-u')
             nextArg = getNextArg(remainingArgs, ii, curArg);
-            opts.url = nextArg;
+            pkg.url = nextArg;
             usedNextArg = true;
         elseif strcmpi(curArg, 'Infile') || strcmpi(curArg, '-i')
             nextArg = getNextArg(remainingArgs, ii, curArg);
@@ -407,11 +417,11 @@ function opts = parseArgs(opts, action, varargin)
             usedNextArg = true;
         elseif strcmpi(curArg, 'InternalDir') || strcmpi(curArg, '-n')
             nextArg = getNextArg(remainingArgs, ii, curArg);
-            opts.internaldir = nextArg;
+            pkg.internaldir = nextArg;
             usedNextArg = true;
         elseif strcmpi(curArg, 'release_tag') || strcmpi(curArg, '-t')
             nextArg = getNextArg(remainingArgs, ii, curArg);
-            opts.release_tag = nextArg;
+            pkg.release_tag = nextArg;
             usedNextArg = true;
         elseif strcmpi(curArg, '--GithubFirst') || ...
                 strcmpi(curArg, '-g')
@@ -435,19 +445,19 @@ function nextArg = getNextArg(remainingArgs, ii, curArg)
     nextArg = remainingArgs{ii+1};
 end
 
-function isOk = validateArgs(opts)
+function isOk = validateArgs(pkg, opts)
     isOk = true;
-    if isempty(opts.name) && isempty(opts.infile)
+    if isempty(pkg.name) && isempty(opts.infile)
         error('You must specify a package name or a filename.');
     end
     if ~isempty(opts.infile)
-        assert(isempty(opts.name), ...
+        assert(isempty(pkg.name), ...
             'Cannot specify package name if installing from filename');
-        assert(isempty(opts.url), ...
+        assert(isempty(pkg.url), ...
             'Cannot specify url if installing from filename');
-        assert(isempty(opts.internaldir), ...
+        assert(isempty(pkg.internaldir), ...
             'Cannot specify internaldir if installing from filename');
-        assert(isempty(opts.release_tag), ...
+        assert(isempty(pkg.release_tag), ...
             'Cannot specify release_tag if installing from filename');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst if installing from filename');
