@@ -78,6 +78,8 @@ function success = findAndSetupPackage(pkg, opts)
     % find url if not set
     if isempty(pkg.url)
         pkg.url = findUrl(pkg, opts);
+    else % checks for .git and replaces
+        pkg.url = handleCustomUrl(pkg.url);
     end
     
     % download package and add to metadata
@@ -107,13 +109,15 @@ function removePackage(pkg, opts)
     pkgsToRm = pkgs(ix);
     disp(['   Removing ' num2str(sum(ix)) ' package(s) named ''' ...
         pkg.name '''.']);
-    reply = input('   Confirm (y/n)? ', 's');
-    if isempty(reply)
-        reply = 'y';
-    end
-    if ~strcmpi(reply(1), 'y')
-        disp('   Forget I asked.');
-        return;
+    if ~opts.force
+        reply = input('   Confirm (y/n)? ', 's');
+        if isempty(reply)
+            reply = 'y';
+        end
+        if ~strcmpi(reply(1), 'y')
+            disp('   Forget I asked.');
+            return;
+        end
     end
     for ii = 1:numel(pkgsToRm)
         pkg = pkgsToRm(ii);
@@ -151,6 +155,16 @@ function [pkg, opts] = setDefaultOpts()
     opts.force = false;
     opts.debug = false;
     opts.nopaths = false;
+end
+
+function url = handleCustomUrl(url)
+% if .git url, must remove and add /zipball/master
+    inds = strfind(url, '.git');
+    if isempty(inds)
+        return;
+    end
+    ind = inds(end);
+    url = [url(1:ind-1) '/zipball/master' url(ind+4:end)];
 end
 
 function url = findUrl(pkg, opts)
@@ -263,7 +277,7 @@ function pkg = installPackage(pkg, opts)
     
     isOk = unzipFromUrl(pkg);
     if ~isOk
-        warning(['   Could not install.']);
+        warning('   Could not install.');
         return;
     end
     pkg.date_downloaded = datestr(datetime);
@@ -316,6 +330,7 @@ function mdir = findMDirOfPackage(pkg)
 	fnms = dir(fullfile(pkg.installdir, '*.m'));
     if ~isempty(fnms)
         mdir = ''; % all is well; *.m files exist in base directory
+        return;
     else
         M_DIR_ORDER = {'bin', 'src', 'lib', 'code'};
         for ii = 1:numel(M_DIR_ORDER)
