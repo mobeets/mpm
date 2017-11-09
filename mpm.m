@@ -26,18 +26,25 @@ function mpm(action, varargin)
     if opts.debug
         warning(['Debug mode. No packages will actually be installed, ' ...
             'or added to metadata or paths.']);
-    end    
+    end
+    
+    % installing from requirements
     if ~isempty(opts.infile)
         % read filename, and call mpm2 for all lines in this file
         readRequirementsFile(opts.infile, opts);
         return;        
     end
     
-    % check metadata
+    % load metadata
     [opts.metadata, opts.metafile] = getMetadata(opts);
     
+    if strcmpi(opts.action, 'uninstall')
+        removePackage(pkg, opts);
+        return;
+    end
+    
     % handle package
-    success = findAndSetupPackage(pkg, opts);
+    findAndSetupPackage(pkg, opts);
 end
 
 function success = findAndSetupPackage(pkg, opts)    
@@ -46,7 +53,8 @@ function success = findAndSetupPackage(pkg, opts)
     disp(['Collecting ''' pkg.name '''...']);
     
     % check if exists
-    if ~opts.force && isInMetadata(pkg, opts);
+    if ~opts.force && ...
+            ~isempty(indexInMetadata(pkg, opts.metadata.packages))
         warning(['   Package already exists. ' ...
             'Re-run with --force to overwrite.']);
         success = false;
@@ -70,6 +78,44 @@ function success = findAndSetupPackage(pkg, opts)
             end
         end
     end
+end
+
+function removePackage(pkg, opts)
+    pkgs = opts.metadata.packages;
+    [~, ix] = indexInMetadata(pkg, pkgs);
+    if ~any(ix)
+        disp(['   No previous versions of ''' pkg.name ...
+            ''' installed by mpm were found.']);
+        return;
+    end
+    
+    % delete package directories if they exist
+    pkgsToRm = pkgs(ix);
+    disp(['   Removing ' num2str(sum(ix)) ' package(s) named ''' ...
+        pkg.name '''.']);
+    reply = input('   Confirm (y/n)? ', 's');
+    if isempty(reply)
+        reply = 'y';
+    end
+    if ~strcmpi(reply(1), 'y')
+        disp('   Forget I asked.');
+        return;
+    end
+    for ii = 1:numel(pkgsToRm)
+        pkg = pkgsToRm(ii);
+        if exist(pkg.installdir, 'dir')
+            % remove old directory
+            rmdir(pkg.installdir, 's');
+        end
+    end
+    
+    % write new metadata to file
+    packages = pkgs(~ix);
+    if ~opts.debug        
+        save(opts.metafile, 'packages');
+    end
+    
+    disp('Uninstallation complete.');
 end
 
 function [pkg, opts] = setDefaultOpts()
@@ -292,33 +338,27 @@ function [m, metafile] = getMetadata(opts)
     m.packages = clean_pkgs;
 end
 
-function doQuit = isInMetadata(pkg, opts)
-    doQuit = false;
-    pkgs = opts.metadata.packages;
+function [ind, ix] = indexInMetadata(pkg, pkgs)
     if isempty(pkgs)
+        ind = [];
         return;
     end
-    if any(ismember({pkgs.name}, pkg.name))
-        doQuit = true;
-    end
+    ix = ismember({pkgs.name}, pkg.name);
+    ind = find(ix, 1, 'first');
 end
 
 function opts = addToMetadata(pkg, opts)
 % update metadata file to track all packages installed
+
     pkgs = opts.metadata.packages;
-    if ~isempty(pkgs)
-        ix = ismember({pkgs.name}, pkg.name);
-    else
-        ix = 0;
-    end
-    if sum(ix) > 0
-        assert(sum(ix) == 1);
-        ind = find(ix, 1, 'first');
-        pkgs = [pkgs(1:(ind-1)) pkgs(ind+1:end)];
-        disp(['   Removing previous version from metadata in  ' ...
+    [~, ix] = indexInMetadata(pkg, pkgs);
+    if any(ix)
+        pkgs = pkgs(~ix);
+        disp(['   Replacing previous version in metadata in  ' ...
             opts.metafile]);
+    else
+        disp(['   Adding package to metadata in ' opts.metafile]);
     end
-    disp(['   Adding package to metadata in ' opts.metafile]);
     pkgs = [pkgs pkg];
     
     % write to file
@@ -400,7 +440,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
 
     % init matlab's input parser and read action
     q = inputParser;
-    validActions = {'install', 'search'};
+    validActions = {'install', 'search', 'uninstall'};
     checkAction = @(x) any(validatestring(x, validActions));
     addRequired(q, 'action', checkAction);
     defaultName = '';
@@ -498,6 +538,16 @@ function isOk = validateArgs(pkg, opts)
             'Cannot specify release_tag if installing from filename');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst if installing from filename');
+    end
+    if strcmpi(opts.action, 'uninstall')
+        assert(isempty(pkg.url), ...
+            'Cannot specify url if uninstalling');
+        assert(isempty(pkg.internaldir), ...
+            'Cannot specify internaldir if uninstalling');
+        assert(isempty(pkg.release_tag), ...
+            'Cannot specify release_tag if uninstalling');
+        assert(~opts.searchgithubfirst, ...
+            'Cannot set searchgithubfirst if uninstalling');
     end
 end
 
