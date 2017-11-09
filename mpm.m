@@ -86,7 +86,7 @@ function success = findAndSetupPackage(pkg, opts)
     % find url if not set
     if isempty(pkg.url)
         pkg.url = findUrl(pkg, opts);
-    else % checks for .git and replaces
+    else
         pkg.url = handleCustomUrl(pkg.url);
     end
     
@@ -184,13 +184,19 @@ function [pkg, opts] = setDefaultOpts()
 end
 
 function url = handleCustomUrl(url)
-% if .git url, must remove and add /zipball/master
+    
+    % if .git url, must remove and add /zipball/master
     inds = strfind(url, '.git');
     if isempty(inds)
-        return;
+        inds = strfind(url, '?download=true');
+        if isempty(inds)
+            url = [url '?download=true'];
+            return;
+        end
     end
     ind = inds(end);
     url = [url(1:ind-1) '/zipball/master' url(ind+4:end)];
+    
 end
 
 function url = findUrl(pkg, opts)
@@ -661,7 +667,7 @@ function readRequirementsFile(fnm, opts)
             error('Cannot set --nopaths because it is in infile.');
         end
         if ~isempty(line)
-            cmd = [line ' --installdir ' opts.installdir];
+            cmd = [line ' installdir ' opts.installdir];
             if opts.force
                 cmd = [cmd ' --force'];
             end
@@ -675,7 +681,7 @@ function readRequirementsFile(fnm, opts)
     % verify
     disp('About to run the following commands: ');
     for ii = 1:numel(cmds)
-        disp(['   mpm2 ' opts.action ' ' cmds{ii}]);
+        disp(['   mpm ' opts.action ' ' cmds{ii}]);
     end
     reply = input('Confirm (y/n)? ', 's');
     if isempty(reply)
@@ -688,6 +694,7 @@ function readRequirementsFile(fnm, opts)
     
     % run all
     for ii = 1:numel(cmds)
-        mpm(opts.action, cmds{ii});
+        cmd = strsplit(cmds{ii});
+        mpm(opts.action, cmd{:});
     end
 end
