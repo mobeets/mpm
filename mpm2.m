@@ -2,19 +2,20 @@ function mpm2(action, varargin)
 % function mpm2(action, varargin)
 % 
 % positional arguments:
-% - action [required]: accept 'install' or 'search' for now; see #30
-% - name [optional]: name of package (e.g., 'matlab2tikz')
+%   action [required]: either 'install' or 'search'
+%   name [optional]: name of package (e.g., 'matlab2tikz')
 % 
 % name-value arguments:
-% - url (-u): optional; if does not exist, must search
-% - Infile (-i): if set, will run mpm2 on all packages in requirements file
-% - InstallDir (-d): where to install package
-% - InternalDir (-n): lets user set which directories inside package to add to path
-% - release_tag (-t): if url is found on github, this lets user set release tag
-
-% arguments, if passed, are true:
-% - SearchGithubFirst (-g): check github for url before matlab fileexchange
-% - Force (-f): install package even if name already exists in InstallDir
+%   url (-u): optional; if does not exist, must search
+%   infile (-i): if set, will run mpm2 on all packages in requirements file
+%   installdir (-d): where to install package
+%   internaldir (-n): lets user set which directories inside package to add to path
+%   release_tag (-t): if url is found on github, this lets user set release tag
+% 
+% arguments that are true if passed (otherwise they are false):
+%   --githubfirst (-g): check github for url before matlab fileexchange
+%   --force (-f): install package even if name already exists in InstallDir
+%   --debug: do not install anything or update paths; just pretend
 % 
     
     opts = setDefaultOpts();
@@ -44,9 +45,9 @@ function mpm2(action, varargin)
         pkg = installPackage(opts);
         if ~isempty(pkg)
             disp(['   Adding package to metadata in ' opts.metafile]);
-            updateMetadata(opts, pkg);
+%             updateMetadata(opts, pkg);
             disp('Updating paths...');
-            updatePaths(opts);
+%             updatePaths(opts);
         end
     end
 end
@@ -57,7 +58,9 @@ function opts = setDefaultOpts()
 
     opts.url = '';
     opts.infile = '';
-    opts.installdir = opts.MPM_INSTALL_DIR;
+%     opts.installdir = opts.MPM_INSTALL_DIR;
+    cdir = fileparts(mfilename('fullpath'));
+    opts.installdir = fullfile(cdir, 'site-packages');
     opts.internaldir = '';
     opts.release_tag = '';
     opts.searchgithubfirst = false;
@@ -102,6 +105,7 @@ function url = findUrlOnFileExchange(opts)
     % return first result
     if ~isempty(tokens)
         url = tokens{1}{1};
+        url = [url '?download=true'];
     else
         url = '';
     end
@@ -141,7 +145,12 @@ function url = findUrlOnGithub(opts)
         url = res(ind).zipball_url;
     else
         rel_url = [item.url '/releases/latest'];
-        res = webread(rel_url);
+        try
+            res = webread(rel_url);
+        catch
+            url = [item.html_url '/zipball/master'];
+            return;
+        end
         if ~isempty(res) && isfield(res, 'zipball_url')
             url = res.zipball_url;
         else
@@ -155,17 +164,60 @@ function pkg = installPackage(opts)
 
     pkg.name = opts.name;
     pkg.url = opts.url;
-    pkg.date_downloaded = datestr(datetime);
-    pkg.mdir = '';
-    
+    pkg.installdir = fullfile(opts.installdir, opts.name);
+    pkg.internaldir = opts.internaldir;
+    pkg.release_tag = opts.release_tag;
     if opts.debug
         return;
     end
     
-    % todo: download url
-    % todo: unzip
-    % todo: find mdir (folder containing .m files that we will add to path)
+    % check for previous package
+    if exist(pkg.installdir, 'dir') && ~opts.force
+        warning(['   Could not install because package already exists.']);
+        return;
+    elseif exist(pkg.installdir, 'dir')
+        % remove old directory
+        rmdir(pkg.installdir, 's');
+    end
     
+    isOk = unzipFromUrl(pkg);
+    if ~isOk
+        warning(['   Could not install.']);
+        return;
+    end
+    pkg.date_downloaded = datestr(datetime);
+    pkg.mdir = findMDirOfPackage(pkg);
+    
+end
+
+function isOk = unzipFromUrl(pkg)
+% download from url to installdir
+    isOk = true;
+    
+    zipfnm = [tempname '.zip'];
+    zipfnm = websave(zipfnm, pkg.url);
+    unzip(zipfnm, pkg.installdir);
+
+    fnms = dir(pkg.installdir);
+    nfnms = numel(fnms);
+    ndirs = sum([fnms.isdir]);
+    if ((nfnms == 3) && (ndirs == 3)) || ...
+            ((nfnms == 4) && (ndirs == 3) && ...
+            strcmpi(fnms(~[fnms.isdir]).name, 'license.txt'))
+        % only folders are '.', '..', and package folder (call it drnm)
+        %       and then maybe a license file, 
+        %       so copy the subtree of drnm and place inside installdir
+        fldrs = fnms([fnms.isdir]);
+        fldr = fldrs(end).name;
+        drnm = fullfile(pkg.installdir, fldr);
+        movefile(fullfile(drnm, '*'), pkg.installdir);
+        rmdir(drnm, 's');
+    end
+end
+
+function mdir = findMDirOfPackage(pkg)
+% todo: find mdir (folder containing .m files that we will add to path)
+    mdir = '';
 end
 
 function [m, metafile] = getMetadata(opts)
@@ -183,6 +235,9 @@ end
 function isOk = checkMetadata(opts)
     isOk = true;
     pkgs = opts.metadata.packages;
+    if isempty(pkgs)
+        return;
+    end
     ix = ismember({pkgs.name}, opts.name);
     dpkgs = pkgs(ix);
     for ii = 1:numel(dpkgs)
@@ -214,7 +269,7 @@ function updatePaths(opts)
     nmsAdded = {};
     for ii = 1:numel(pkgs)
         pkg = pkgs(ii);
-        if exist(pkg.mdir, 'dir')
+        if exist(pkg.mdir, 'dir') && ~isempty(pkg.mdir)
             if ~opts.debug
                 addpath(pkg.mdir);
             end
@@ -266,8 +321,8 @@ function opts = parseArgs(opts, action, varargin)
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
-        'release_tag', 'searchgithubfirst', 'force', '-u', '-i', '-d', ...
-        '-n', '-t', '-g', '-f', 'debug'};
+        'release_tag', '--githubfirst', '--force', ...
+        '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
     
     % no additional args
     if numel(remainingArgs) == 0
@@ -312,12 +367,12 @@ function opts = parseArgs(opts, action, varargin)
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.release_tag = nextArg;
             usedNextArg = true;
-        elseif strcmpi(curArg, 'SearchGithubFirst') || ...
+        elseif strcmpi(curArg, '--GithubFirst') || ...
                 strcmpi(curArg, '-g')
             opts.searchgithubfirst = true;
-        elseif strcmpi(curArg, 'Force') || strcmpi(curArg, '-f')
+        elseif strcmpi(curArg, '--force') || strcmpi(curArg, '-f')
             opts.force = true;
-        elseif strcmpi(curArg, 'debug')
+        elseif strcmpi(curArg, '--debug')
             opts.debug = true;
         else
             error(['Did not recognize argument ''' curArg '''.']);
