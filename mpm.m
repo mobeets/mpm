@@ -22,6 +22,7 @@ function mpm(action, varargin)
 % arguments that are true if passed (otherwise they are false):
 %   --githubfirst (-g): check github for url before matlab fileexchange
 %   --force (-f): install package even if name already exists in InstallDir
+%   --remote: interprets url as a path to a bare git repository
 %   --debug: do not install anything or update paths; just pretend
 %   --nopaths: do not add anything to path after installing
 % 
@@ -86,7 +87,7 @@ function success = findAndSetupPackage(pkg, opts)
     % find url if not set
     if isempty(pkg.url)
         pkg.url = findUrl(pkg, opts);
-    else
+    elseif (~opts.remote)
         pkg.url = handleCustomUrl(pkg.url);
     end
     
@@ -181,6 +182,7 @@ function [pkg, opts] = setDefaultOpts()
     opts.force = false;
     opts.debug = false;
     opts.nopaths = false;
+    opts.remote = false;
 end
 
 function url = handleCustomUrl(url)
@@ -307,7 +309,12 @@ function pkg = installPackage(pkg, opts)
         rmdir(pkg.installdir, 's');
     end
     
-    isOk = unzipFromUrl(pkg);
+    if (~opts.remote)
+        isOk = unzipFromUrl(pkg);
+    else
+        isOk = checkoutFromUrl(pkg);
+    end
+    
     if ~isOk
         warning('   Could not install.');
         return;
@@ -342,6 +349,17 @@ function isOk = unzipFromUrl(pkg)
     end
 end
 
+function isOk = checkoutFromUrl(pkg)
+% git checkout from url to installdir
+    isOk = true;
+    flag = system(['git clone ', pkg.url, ' ', pkg.installdir]);
+    
+    if (flag ~= 0)
+        isOk = false;
+        warning(['git clone of URL ', pkg.url, ' failed.']);
+    end
+end
+
 function mdir = findMDirOfPackage(pkg)
 % find mdir (folder containing .m files that we will add to path)
     
@@ -351,7 +369,7 @@ function mdir = findMDirOfPackage(pkg)
     end
     if ~isempty(pkg.internaldir)
         if exist(fullfile(pkg.installdir, pkg.internaldir), 'dir')
-            mdir = opts.internaldir;
+            mdir = pkg.internaldir;
             return;
         else
             warning(['Ignoring internaldir because ' ...
@@ -519,7 +537,8 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', '--nopaths', ...
-        '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
+        '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug', ...
+        '--remote'};
     
     % no additional args
     if numel(remainingArgs) == 0
@@ -578,6 +597,8 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         elseif strcmpi(curArg, '--nopaths')
             pkg.addpath = false;
             opts.nopaths = true;
+        elseif strcmpi(curArg, '--remote')
+            opts.remote = true;
         else
             error(['Did not recognize argument ''' curArg '''.']);
         end
