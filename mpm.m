@@ -15,7 +15,7 @@ function mpm(action, varargin)
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
 %   infile (-i): if set, will run mpm2 on all packages listed in file
-%   installdir (-d): where to install package
+%   environment (-e): which environment name to use
 %   internaldir (-n): lets user set which directories inside package to add to path
 %   release_tag (-t): if url is found on github, this lets user set release tag
 % 
@@ -172,7 +172,22 @@ function [pkg, opts] = setDefaultOpts()
     pkg.addpath = true;
     
     opts = mpm_config(); % load default opts from config file
-    opts.installdir = opts.DEFAULT_INSTALL_DIR;
+
+    % default environment name and environment base
+    % base may be overriden in mpm_config
+    opts.environment = 'default';
+    if ~isempty(opts.DEFAULT_ENVIRONMENT_BASE)
+        opts.environment_base = opts.DEFAULT_ENVIRONMENT_BASE;
+    elseif isunix
+        opts.environment_base = fullfile(getenv('HOME'), '.mpm');
+    %elseif ispc
+        % TODO
+    %elseif ismac
+        % TODO
+    else
+        opts.environment_base = fileparts(mfilename('fullpath'), 'environments');
+    end
+    opts.installdir = fullfile(opts.environment_base, opts.environment);
 %     opts.update_mpm_paths = false; % set in mpm_config
     opts.searchgithubfirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
     opts.update_all_paths = false;    
@@ -439,7 +454,9 @@ function updatePaths(pkg, opts)
     if success
         nmsAdded = [nmsAdded pkg.name];
     end
-    
+
+    disp(['   Using environment ' opts.environment]);
+
     % add mdir to path for each package in metadata (optional)
     if opts.update_mpm_paths
         pkgs = opts.metadata.packages;
@@ -509,21 +526,17 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     parse(q, action, varargin{:});
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
-    
-    if strcmpi(opts.action, 'init')
-        if ~isempty(remainingArgs)
-            error('If running ''init'', no other arguments are needed.');
-        end
-        return;
-    end
-    
+
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', '--nopaths', ...
-        '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
-    
+        '-u', '-i', '-e', '-n', '-t', '-g', '-f', '--debug'};
+
     % no additional args
     if numel(remainingArgs) == 0
         if strcmpi(opts.action, 'freeze')
+            return;
+        elseif strcmpi(opts.action, 'init')
+            opts.environment = 'default';
             return;
         else
             error('You must specify a package name or a filename.');
@@ -556,9 +569,10 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.infile = nextArg;
             usedNextArg = true;
-        elseif strcmpi(curArg, 'InstallDir') || strcmpi(curArg, '-d')
+        elseif strcmpi(curArg, 'InstallDir') || strcmpi(curArg, '-e')
             nextArg = getNextArg(remainingArgs, ii, curArg);
-            opts.installdir = nextArg;
+            opts.environment = nextArg;
+            opts.installdir = fullfile(opts.environment_base, opts.environment);
             usedNextArg = true;
         elseif strcmpi(curArg, 'InternalDir') || strcmpi(curArg, '-n')
             nextArg = getNextArg(remainingArgs, ii, curArg);
