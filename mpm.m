@@ -1,6 +1,6 @@
 function mpm(action, varargin)
 % function mpm(action, varargin)
-% 
+%
 % positional arguments:
 %   action [required]:
 %       - init: add all installed packages in default install directory to
@@ -11,21 +11,21 @@ function mpm(action, varargin)
 %       - freeze: list all installed packages (optional: in installdir)
 %       File Exchange)
 %   name [optional]: name of package (e.g., 'matlab2tikz')
-% 
+%
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
 %   infile (-i): if set, will run mpm2 on all packages listed in file
 %   installdir (-d): where to install package
 %   internaldir (-n): lets user set which directories inside package to add to path
 %   release_tag (-t): if url is found on github, this lets user set release tag
-% 
+%
 % arguments that are true if passed (otherwise they are false):
 %   --githubfirst (-g): check github for url before matlab fileexchange
 %   --force (-f): install package even if name already exists in InstallDir
 %   --debug: do not install anything or update paths; just pretend
 %   --nopaths: do not add anything to path after installing
-% 
-    
+%
+
     % parse and validate command line args
     [pkg, opts] = setDefaultOpts();
     [pkg, opts] = parseArgs(pkg, opts, action, varargin);
@@ -34,17 +34,17 @@ function mpm(action, varargin)
         warning(['Debug mode. No packages will actually be installed, ' ...
             'or added to metadata or paths.']);
     end
-    
+
     % installing from requirements
     if ~isempty(opts.infile)
         % read filename, and call mpm2 for all lines in this file
         readRequirementsFile(opts.infile, opts);
-        return;        
+        return;
     end
-    
+
     % load metadata
     [opts.metadata, opts.metafile] = getMetadata(opts);
-    
+
     % mpm init
     if strcmpi(opts.action, 'init')
         opts.update_mpm_paths = true;
@@ -52,28 +52,28 @@ function mpm(action, varargin)
         updatePaths(pkg, opts);
         return;
     end
-    
+
     % mpm freeze
     if strcmpi(opts.action, 'freeze')
         listPackages(opts);
         return;
     end
-    
+
     % mpm uninstall
     if strcmpi(opts.action, 'uninstall')
         removePackage(pkg, opts);
         return;
     end
-    
+
     % mpm search OR mpm install
     findAndSetupPackage(pkg, opts);
 end
 
-function success = findAndSetupPackage(pkg, opts)    
+function success = findAndSetupPackage(pkg, opts)
     success = true;
     pkg.installdir = fullfile(opts.installdir, pkg.name);
     disp(['Collecting ''' pkg.name '''...']);
-    
+
     % check if exists
     if ~opts.force && ...
             ~isempty(indexInMetadata(pkg, opts.metadata.packages))
@@ -81,17 +81,17 @@ function success = findAndSetupPackage(pkg, opts)
             'Re-run with --force to overwrite.']);
         success = false;
         return;
-    end    
-    
+    end
+
     % find url if not set
     if isempty(pkg.url)
         pkg.url = findUrl(pkg, opts);
     else
         pkg.url = handleCustomUrl(pkg.url);
     end
-    
+
     % download package and add to metadata
-    if ~isempty(pkg.url) && strcmpi(opts.action, 'install')        
+    if ~isempty(pkg.url) && strcmpi(opts.action, 'install')
         disp(['   Downloading ' pkg.url '...']);
         pkg = installPackage(pkg, opts);
         if ~isempty(pkg)
@@ -112,7 +112,7 @@ function removePackage(pkg, opts)
             ''' installed by mpm were found.']);
         return;
     end
-    
+
     % delete package directories if they exist
     pkgsToRm = pkgs(ix);
     disp(['   Removing ' num2str(sum(ix)) ' package(s) named ''' ...
@@ -134,13 +134,13 @@ function removePackage(pkg, opts)
             rmdir(pkg.installdir, 's');
         end
     end
-    
+
     % write new metadata to file
     packages = pkgs(~ix);
-    if ~opts.debug        
+    if ~opts.debug
         save(opts.metafile, 'packages');
     end
-    
+
     disp('Uninstallation complete.');
 end
 
@@ -162,29 +162,29 @@ function listPackages(opts)
 end
 
 function [pkg, opts] = setDefaultOpts()
-% load opts from config file, and then set additional defaults    
+% load opts from config file, and then set additional defaults
 
     % empty package
     pkg.name = '';
-    pkg.url = '';    
+    pkg.url = '';
     pkg.internaldir = '';
     pkg.release_tag = '';
     pkg.addpath = true;
-    
+
     opts = mpm_config(); % load default opts from config file
     opts.installdir = opts.DEFAULT_INSTALL_DIR;
 %     opts.update_mpm_paths = false; % set in mpm_config
     opts.searchgithubfirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
-    opts.update_all_paths = false;    
-    
-    opts.infile = '';    
+    opts.update_all_paths = false;
+
+    opts.infile = '';
     opts.force = false;
     opts.debug = false;
     opts.nopaths = false;
 end
 
 function url = handleCustomUrl(url)
-    
+
     % if .git url, must remove and add /zipball/master
     inds = strfind(url, '.git');
     if isempty(inds)
@@ -196,7 +196,7 @@ function url = handleCustomUrl(url)
     end
     ind = inds(end);
     url = [url(1:ind-1) '/zipball/master' url(ind+4:end)];
-    
+
 end
 
 function url = findUrl(pkg, opts)
@@ -228,11 +228,11 @@ function url = findUrlOnFileExchange(pkg)
     % query file exchange
     base_url = 'http://www.mathworks.com/matlabcentral/fileexchange/';
     html = webread(base_url, 'term', pkg.name);
-    
+
     % extract all hrefs from '<a href="*" class="results_title">'
     expr = 'class="results_title"[^>]*href="([^"]*)"[^>]*|href="([^"]*)"[^>]*class="results_title"';
     tokens = regexp(html, expr, 'tokens');
-    
+
     % return first result
     if ~isempty(tokens)
         url = tokens{1}{1};
@@ -250,7 +250,7 @@ function url = findUrlOnGithub(pkg)
 %
 
     url = '';
-    
+
     % query github for matlab repositories, sorted by stars
     q_url = 'https://api.github.com/search/repositories';
     html = webread(q_url, 'q', pkg.name, 'language', 'matlab', ...
@@ -261,7 +261,7 @@ function url = findUrlOnGithub(pkg)
 
     % take first repo
     item = html.items(1);
-    
+
     if ~isempty(pkg.release_tag)
         % if release tag set, return the release matching this tag
         res = webread(item.tags_url);
@@ -291,12 +291,12 @@ function url = findUrlOnGithub(pkg)
 end
 
 function pkg = installPackage(pkg, opts)
-% install package by downloading url, unzipping, and finding paths to add    
-    
+% install package by downloading url, unzipping, and finding paths to add
+
     if opts.debug
         return;
     end
-    
+
     % check for previous package
     if exist(pkg.installdir, 'dir') && ~opts.force
         warning('   Could not install because folder already exists.');
@@ -306,7 +306,7 @@ function pkg = installPackage(pkg, opts)
         disp('   Removing previous version from disk.');
         rmdir(pkg.installdir, 's');
     end
-    
+
     isOk = unzipFromUrl(pkg);
     if ~isOk
         warning('   Could not install.');
@@ -314,13 +314,13 @@ function pkg = installPackage(pkg, opts)
     end
     pkg.date_downloaded = datestr(datetime);
     pkg.mdir = findMDirOfPackage(pkg);
-    
+
 end
 
 function isOk = unzipFromUrl(pkg)
 % download from url to installdir
     isOk = true;
-    
+
     zipfnm = [tempname '.zip'];
     zipfnm = websave(zipfnm, pkg.url);
     unzip(zipfnm, pkg.installdir);
@@ -332,7 +332,7 @@ function isOk = unzipFromUrl(pkg)
             ((nfnms == 4) && (ndirs == 3) && ...
             strcmpi(fnms(~[fnms.isdir]).name, 'license.txt'))
         % only folders are '.', '..', and package folder (call it drnm)
-        %       and then maybe a license file, 
+        %       and then maybe a license file,
         %       so copy the subtree of drnm and place inside installdir
         fldrs = fnms([fnms.isdir]);
         fldr = fldrs(end).name;
@@ -344,7 +344,7 @@ end
 
 function mdir = findMDirOfPackage(pkg)
 % find mdir (folder containing .m files that we will add to path)
-    
+
     if ~pkg.addpath
         mdir = '';
         return;
@@ -358,8 +358,8 @@ function mdir = findMDirOfPackage(pkg)
                 'it did not exist in package.']);
         end
     end
-    
-	fnms = dir(fullfile(pkg.installdir, '*.m'));
+
+    fnms = dir(fullfile(pkg.installdir, '*.m'));
     if ~isempty(fnms)
         mdir = ''; % all is well; *.m files exist in base directory
         return;
@@ -421,25 +421,25 @@ function opts = addToMetadata(pkg, opts)
         disp(['   Adding package to metadata in ' opts.metafile]);
     end
     pkgs = [pkgs pkg];
-    
+
     % write to file
     packages = pkgs;
     opts.metadata.packages = packages;
-    if ~opts.debug        
+    if ~opts.debug
         save(opts.metafile, 'packages');
     end
 end
 
 function updatePaths(pkg, opts)
 % read metadata file and add all paths listed
-    
+
     % add mdir to path for current package
     nmsAdded = {};
     success = updatePath(pkg, opts);
     if success
         nmsAdded = [nmsAdded pkg.name];
     end
-    
+
     % add mdir to path for each package in metadata (optional)
     if opts.update_mpm_paths
         pkgs = opts.metadata.packages;
@@ -451,7 +451,7 @@ function updatePaths(pkg, opts)
         end
     end
     disp(['   Added paths for ' num2str(numel(nmsAdded)) ' package(s).']);
-    
+
     % also add all folders listed in install_dir (optional)
     if opts.update_all_paths
         c = updateAllPaths(opts, nmsAdded);
@@ -477,7 +477,7 @@ end
 function c = updateAllPaths(opts, nmsAlreadyAdded)
 % adds all directories inside installdir to path
 %   ignoring those already added
-% 
+%
     c = 0;
     fs = dir(opts.installdir); % get names of everything in install dir
     fs = {fs([fs.isdir]).name}; % keep directories only
@@ -485,7 +485,7 @@ function c = updateAllPaths(opts, nmsAlreadyAdded)
     for ii = 1:numel(fs)
         f = fs{ii};
         if ~ismember(f, nmsAlreadyAdded)
-            if ~opts.debug                
+            if ~opts.debug
                 pth = fullfile(opts.installdir, f);
                 disp(['   Adding to path: ' pth]);
                 addpath(pth);
@@ -497,7 +497,7 @@ end
 
 function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
 % function p = parseArgs(action, varargin)
-% 
+%
 
     % init matlab's input parser and read action
     q = inputParser;
@@ -509,18 +509,18 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     parse(q, action, varargin{:});
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
-    
+
     if strcmpi(opts.action, 'init')
         if ~isempty(remainingArgs)
             error('If running ''init'', no other arguments are needed.');
         end
         return;
     end
-    
+
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', '--nopaths', ...
         '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
-    
+
     % no additional args
     if numel(remainingArgs) == 0
         if strcmpi(opts.action, 'freeze')
@@ -529,7 +529,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
             error('You must specify a package name or a filename.');
         end
     end
-    
+
     % if first arg is not a param name, it's the package name
     nextArg = remainingArgs{1};
     if ~ismember(lower(nextArg), lower(allParams))
@@ -538,7 +538,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     else
         pkg.name = '';
     end
-    
+
     % check for parameters, passed as name-value pairs
     usedNextArg = false;
     for ii = 1:numel(remainingArgs)
@@ -546,7 +546,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         if usedNextArg
             usedNextArg = false;
             continue;
-        end        
+        end
         usedNextArg = false;
         if strcmpi(curArg, 'url') || strcmpi(curArg, '-u')
             nextArg = getNextArg(remainingArgs, ii, curArg);
@@ -644,11 +644,11 @@ end
 function readRequirementsFile(fnm, opts)
     txt = fileread(fnm);
     lines = strsplit(txt, '\n');
-    
+
     % build list of commands to run
     % and check for illegal params (note spaces)
     illegalParams = {' -i ', ' infile ', ' installdir '};
-    cmds = {};    
+    cmds = {};
     for ii = 1:numel(lines)
         line = lines{ii};
         for jj = 1:numel(illegalParams)
@@ -677,7 +677,7 @@ function readRequirementsFile(fnm, opts)
             cmds = [cmds cmd];
         end
     end
-    
+
     % verify
     disp('About to run the following commands: ');
     for ii = 1:numel(cmds)
@@ -691,7 +691,7 @@ function readRequirementsFile(fnm, opts)
         disp('I saw nothing.');
         return;
     end
-    
+
     % run all
     for ii = 1:numel(cmds)
         cmd = strsplit(cmds{ii});
