@@ -7,9 +7,9 @@ function mpm(action, varargin)
 %       path
 %       - install: installs a package by name
 %       - uninstall: installs a package by name
-%       - search: finds a url for a package by name (searches Github and
+%       - search: finds a url for a package by name
+%                 (searches Github and File Exchange)
 %       - freeze: list all installed packages (optional: in installdir)
-%       File Exchange)
 %   name [optional]: name of package (e.g., 'matlab2tikz')
 % 
 % name-value arguments:
