@@ -86,8 +86,6 @@ function success = findAndSetupPackage(pkg, opts)
     % find url if not set
     if isempty(pkg.url)
         pkg.url = findUrl(pkg, opts);
-    else
-        pkg.url = handleCustomUrl(pkg.url);
     end
     
     % download package and add to metadata
@@ -306,8 +304,15 @@ function pkg = installPackage(pkg, opts)
         disp('   Removing previous version from disk.');
         rmdir(pkg.installdir, 's');
     end
-    
-    isOk = unzipFromUrl(pkg);
+
+    if ~isempty(strfind(pkg.url, 'github.com'))
+        % download zip
+        pkg.url = handleCustomUrl(pkg.url);
+        isOk = unzipFromUrl(pkg);
+    else
+        % install with git clone
+        isOk = checkoutFromUrl(pkg);
+    end
     if ~isOk
         warning('   Could not install.');
         return;
@@ -315,6 +320,18 @@ function pkg = installPackage(pkg, opts)
     pkg.date_downloaded = datestr(datetime);
     pkg.mdir = findMDirOfPackage(pkg);
     
+end
+
+function isOk = checkoutFromUrl(pkg)
+% git checkout from url to installdir
+    isOk = true;
+    flag = system(['git clone ', pkg.url, ' ', pkg.installdir]);
+    
+    if (flag ~= 0)
+        isOk = false;
+        warning(['git clone of URL ', pkg.url, ' failed.' ...
+            ' (Is ''git'' is installed on your system?)']);
+    end
 end
 
 function isOk = unzipFromUrl(pkg)
@@ -351,7 +368,7 @@ function mdir = findMDirOfPackage(pkg)
     end
     if ~isempty(pkg.internaldir)
         if exist(fullfile(pkg.installdir, pkg.internaldir), 'dir')
-            mdir = opts.internaldir;
+            mdir = pkg.internaldir;
             return;
         else
             warning(['Ignoring internaldir because ' ...
