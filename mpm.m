@@ -7,9 +7,9 @@ function mpm(action, varargin)
 %       path
 %       - install: installs a package by name
 %       - uninstall: installs a package by name
-%       - search: finds a url for a package by name (searches Github and
+%       - search: finds a url for a package by name
+%                 (searches Github and File Exchange)
 %       - freeze: list all installed packages (optional: in installdir)
-%       File Exchange)
 %   name [optional]: name of package (e.g., 'matlab2tikz')
 % 
 % name-value arguments:
@@ -249,10 +249,13 @@ function url = findUrlOnGithub(pkg)
 
     url = '';
     
-    % query github for matlab repositories, sorted by stars
+    % query github for matlab repositories
+    % https://developer.github.com/v3/search/#search-repositories
+    % ' ' will be replaced by '+', which seems necessary
+    % ':' for search qualifiers can be sent encoded on the other hand
     q_url = 'https://api.github.com/search/repositories';
-    html = webread(q_url, 'q', pkg.name, 'language', 'matlab', ...
-        'sort', 'stars', 'order', 'desc');
+    q_req = [pkg.name, ' language:matlab'];
+    html = webread(q_url, 'q', q_req);
     if isempty(html) || ~isfield(html, 'items') || isempty(html.items)
         return;
     end
