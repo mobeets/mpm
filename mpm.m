@@ -16,6 +16,7 @@ function mpm(action, varargin)
 %   url (-u): optional; if does not exist, must search
 %   infile (-i): if set, will run mpm2 on all packages listed in file
 %   installdir (-d): where to install package
+%   query (-q): if name is different than query
 %   internaldir (-n): lets user set which directories inside package to add to path
 %   release_tag (-t): if url is found on github, this lets user set release tag
 % 
@@ -91,8 +92,8 @@ function success = findAndSetupPackage(pkg, opts)
     % download package and add to metadata
     if ~isempty(pkg.url) && strcmpi(opts.action, 'install')        
         disp(['   Downloading ' pkg.url '...']);
-        pkg = installPackage(pkg, opts);
-        if ~isempty(pkg)
+        [pkg, isOk] = installPackage(pkg, opts);
+        if ~isempty(pkg) && isOk
             opts = addToMetadata(pkg, opts);
             if pkg.addpath
                 disp('Updating paths...');
@@ -223,9 +224,14 @@ end
 function url = findUrlOnFileExchange(pkg)
 % search file exchange, and return first search result
 
+    query = pkg.query;
+    if isempty(query)
+        query = pkg.name;
+    end
+    
     % query file exchange
     base_url = 'http://www.mathworks.com/matlabcentral/fileexchange/';
-    html = webread(base_url, 'term', pkg.name);
+    html = webread(base_url, 'term', query);
     
     % extract all hrefs from '<a href="*" class="results_title">'
     expr = 'class="results_title"[^>]*href="([^"]*)"[^>]*|href="([^"]*)"[^>]*class="results_title"';
@@ -248,13 +254,17 @@ function url = findUrlOnGithub(pkg)
 %
 
     url = '';
+    query = pkg.query;
+    if isempty(query)
+        query = pkg.name;
+    end
     
     % query github for matlab repositories
     % https://developer.github.com/v3/search/#search-repositories
     % ' ' will be replaced by '+', which seems necessary
     % ':' for search qualifiers can be sent encoded on the other hand
     q_url = 'https://api.github.com/search/repositories';
-    q_req = [pkg.name, ' language:matlab'];
+    q_req = [query, ' language:matlab'];
     html = webread(q_url, 'q', q_req);
     if isempty(html) || ~isfield(html, 'items') || isempty(html.items)
         return;
@@ -291,7 +301,7 @@ function url = findUrlOnGithub(pkg)
     end
 end
 
-function pkg = installPackage(pkg, opts)
+function [pkg, isOk] = installPackage(pkg, opts)
 % install package by downloading url, unzipping, and finding paths to add    
     
     if opts.debug
@@ -308,13 +318,14 @@ function pkg = installPackage(pkg, opts)
         rmdir(pkg.installdir, 's');
     end
     
-    if isempty(strfind(pkg.url, 'github.com'))
+    if ~isempty(strfind(pkg.url, '.git')) && ...
+            isempty(strfind(pkg.url, 'github.com'))
+        % install with git clone because not on github
+        isOk = checkoutFromUrl(pkg);        
+    else
         % download zip
         pkg.url = handleCustomUrl(pkg.url);
         isOk = unzipFromUrl(pkg);
-    else
-        % install with git clone
-        isOk = checkoutFromUrl(pkg);
     end
     if ~isOk
         warning('   Could not install.');
@@ -357,7 +368,11 @@ function isOk = unzipFromUrl(pkg)
         fldrs = fnms([fnms.isdir]);
         fldr = fldrs(end).name;
         drnm = fullfile(pkg.installdir, fldr);
-        movefile(fullfile(drnm, '*'), pkg.installdir);
+        try
+            movefile(fullfile(drnm, '*'), pkg.installdir);
+        catch % hack for handling packages like cbrewer 34087
+            movefile(fullfile(drnm, pkg.name, '*'), pkg.installdir);
+        end
         rmdir(drnm, 's');
     end
 end
@@ -539,7 +554,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', '--nopaths', ...
-        '-u', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
+        '-u', '-q', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
     
     % no additional args
     if numel(remainingArgs) == 0
@@ -554,9 +569,11 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     nextArg = remainingArgs{1};
     if ~ismember(lower(nextArg), lower(allParams))
         pkg.name = nextArg;
+        pkg.query = '';
         remainingArgs = remainingArgs(2:end);
     else
         pkg.name = '';
+        pkg.query = '';
     end
     
     % check for parameters, passed as name-value pairs
@@ -572,6 +589,10 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
             nextArg = getNextArg(remainingArgs, ii, curArg);
             pkg.url = nextArg;
             usedNextArg = true;
+        elseif strcmpi(curArg, 'Query') || strcmpi(curArg, '-q')
+            nextArg = getNextArg(remainingArgs, ii, curArg);
+            pkg.query = nextArg;
+            usedNextArg = true;
         elseif strcmpi(curArg, 'Infile') || strcmpi(curArg, '-i')
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.infile = nextArg;
@@ -579,7 +600,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         elseif strcmpi(curArg, 'InstallDir') || strcmpi(curArg, '-d')
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.installdir = nextArg;
-            usedNextArg = true;
+            usedNextArg = true;        
         elseif strcmpi(curArg, 'InternalDir') || strcmpi(curArg, '-n')
             nextArg = getNextArg(remainingArgs, ii, curArg);
             pkg.internaldir = nextArg;
@@ -638,6 +659,8 @@ function isOk = validateArgs(pkg, opts)
     if strcmpi(opts.action, 'uninstall')
         assert(isempty(pkg.url), ...
             'Cannot specify url if uninstalling');
+        assert(isempty(pkg.query), ...
+            'Cannot specify query if uninstalling');
         assert(isempty(pkg.internaldir), ...
             'Cannot specify internaldir if uninstalling');
         assert(isempty(pkg.release_tag), ...
@@ -652,6 +675,8 @@ function isOk = validateArgs(pkg, opts)
         assert(~opts.force, 'Nothing to force when running ''freeze''.');
         assert(isempty(pkg.url), ...
             'Cannot specify url when running ''freeze''');
+        assert(isempty(pkg.query), ...
+            'Cannot specify query when running ''freeze''');
         assert(isempty(pkg.internaldir), ...
             'Cannot specify internaldir when running ''freeze''');
         assert(isempty(pkg.release_tag), ...
