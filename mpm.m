@@ -188,9 +188,9 @@ function url = handleCustomUrl(url)
     if isempty(inds)
         inds = strfind(url, '?download=true');
         if isempty(inds)
-            url = [url '?download=true'];
-            return;
+            url = [url '?download=true'];            
         end
+        return;
     end
     ind = inds(end);
     url = [url(1:ind-1) '/zipball/master' url(ind+4:end)];
@@ -304,8 +304,8 @@ function pkg = installPackage(pkg, opts)
         disp('   Removing previous version from disk.');
         rmdir(pkg.installdir, 's');
     end
-
-    if ~isempty(strfind(pkg.url, 'github.com'))
+    
+    if isempty(strfind(pkg.url, 'github.com'))
         % download zip
         pkg.url = handleCustomUrl(pkg.url);
         isOk = unzipFromUrl(pkg);
