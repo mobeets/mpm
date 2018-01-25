@@ -249,7 +249,7 @@ end
 function url = findUrlOnGithub(pkg)
 % searches github for matlab repositories
 %   - if release_tag is set, get url of release that matches
-%   - otherwise, get url ofmost recent release
+%   - otherwise, get url of most recent release
 %   - and if no releases exist, get url of most recent commit
 %
 
@@ -310,7 +310,9 @@ function [pkg, isOk] = installPackage(pkg, opts)
     
     % check for previous package
     if exist(pkg.installdir, 'dir') && ~opts.force
-        warning('   Could not install because folder already exists.');
+        warning(['   Could not install because folder already exists.', ...
+            ' Try adding "-f" to force.']);
+        isOk = false;
         return;
     elseif exist(pkg.installdir, 'dir')
         % remove old directory
@@ -326,6 +328,11 @@ function [pkg, isOk] = installPackage(pkg, opts)
         % download zip
         pkg.url = handleCustomUrl(pkg.url);
         isOk = unzipFromUrl(pkg);
+        if ~isOk && ~isempty(strfind(pkg.url, 'github.com')) && ...
+            isempty(strfind(pkg.url, '.git'))
+            warning(['If you were trying to install a github repo, ', ...
+                'try adding ".git" to the end.']);
+        end
     end
     if ~isOk
         warning('   Could not install.');
@@ -354,7 +361,11 @@ function isOk = unzipFromUrl(pkg)
     
     zipfnm = [tempname '.zip'];
     zipfnm = websave(zipfnm, pkg.url);
-    unzip(zipfnm, pkg.installdir);
+    try
+        unzip(zipfnm, pkg.installdir);
+    catch
+        isOk = false; return;
+    end
 
     fnms = dir(pkg.installdir);
     nfnms = numel(fnms);
