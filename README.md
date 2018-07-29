@@ -53,6 +53,14 @@ OR:
 
 (Note that when specifying Github repo urls you must add the '.git' to the url.)
 
+__Install local package:__
+
+```
+>> mpm install my_package -u path/to/package --local
+```
+
+The above will copy `path/to/package` into the default install directory. To skip the copy, add `-e` to the above command.
+
 __Overwrite existing packages:__
 
 ```
@@ -65,7 +73,7 @@ __Install/uninstall packages in a specific directory:__
 >> mpm install matlab2tikz -d /Users/mobeets/mypath
 ```
 
-Note that the default installation directory is`mpm-packages/`.
+Note that the default installation directory is `mpm-packages/`.
 
 ### Install multiple packages using a requirements file
 
