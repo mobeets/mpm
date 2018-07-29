@@ -888,3 +888,30 @@ function checkForFileAndRun(installdir, fnm, opts)
     % run
     run(fpath);
 end
+
+function pathlist = checkForPathlistAndGenpath(fpath, basedir)
+    fid = fopen(fpath);
+    if fid == -1
+        return;
+    end
+    
+    pathlist = '';
+    line = '';
+    while ~isnumeric(line)
+        line = fgetl(fid);
+        if ~isnumeric(line) && numel(line) > 0
+            if strcmpi(line(end), '*')
+                % e.g., etc/* => etc/x:
+                curpath = genpath(fullfile(basedir, line(1:end-1)));
+            else
+                % add just this one dir
+                curpath = [fullfile(basedir, line) ':'];
+            end
+            pathlist = [pathlist curpath];
+        end
+    end
+    
+    if fid ~= -1
+        fclose(fid);
+    end
+end
