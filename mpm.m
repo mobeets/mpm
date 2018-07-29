@@ -171,7 +171,12 @@ function listPackages(opts)
         if ~isempty(pkg.release_tag)
             nm = [nm '==' pkg.release_tag];
         end
-        disp(['- ' nm ' (' pkg.date_downloaded ')']);
+        out = ['- ' nm ' (' pkg.date_downloaded ')'];
+        cdir = fileparts(pkg.installdir);
+        if ~strcmpi(cdir, opts.installdir)
+            out = [out ': ' pkg.installdir];
+        end
+        disp(out);
     end
 end
 
@@ -186,6 +191,7 @@ function [pkg, opts] = setDefaultOpts()
     pkg.addpath = true;
     pkg.local_install = false;
     pkg.no_rmdir_on_uninstall = false;
+    pkg.pathlist = [];
     
     opts = mpm_config(); % load default opts from config file
     opts.installdir = opts.DEFAULT_INSTALL_DIR;
@@ -324,6 +330,7 @@ function [pkg, isOk] = installPackage(pkg, opts)
 % install package by downloading url, unzipping, and finding paths to add    
     
     if opts.debug
+        isOk = false;
         return;
     end
     isOk = true;
@@ -353,7 +360,7 @@ function [pkg, isOk] = installPackage(pkg, opts)
             warning(['If you were trying to install a github repo, ', ...
                 'try adding ".git" to the end.']);
         end
-    else
+    else % local install (using pre-existing local directory)
         % make sure path exists
         if ~exist(pkg.url, 'dir')
             warning(['Provided path to local directory does not ' ...
@@ -363,10 +370,27 @@ function [pkg, isOk] = installPackage(pkg, opts)
         
         % copy directory to installdir
         if ~opts.local_install_uselocal
+            if ~exist(pkg.url, 'dir')
+                warning(['Could not find directory: "' ...
+                    pkg.url '." Try providing absolute path.']);
+                isOk = false; return;
+            end
             mkdir(pkg.installdir);
             isOk = copyfile(pkg.installdir, pkg.url);
-        else
-            pkg.installdir = pkg.url;
+        else % no copy; just track the provided path
+            % make sure we have absolute path
+            if ~isempty(strfind(pkg.url, pwd))
+                abspath = pkg.url;
+            else % try making it ourselves
+                abspath = fullfile(pwd, pkg.url);
+            end
+            if ~exist(abspath, 'dir')
+                warning(['Could not find directory: "' ...
+                    abspath '." Try providing absolute path.']);
+                isOk = false; return;
+            else
+                pkg.installdir = abspath;
+            end
         end
     end
     if ~isOk
@@ -483,6 +507,9 @@ function [m, metafile] = getMetadata(opts)
         end
         if ~isfield(pkg, 'no_rmdir_on_uninstall')
             pkg.no_rmdir_on_uninstall = false;
+        end
+        if ~isfield(pkg, 'pathlist')
+            pkg.pathlist = [];
         end
         pth = fullfile(pkg.installdir, pkg.mdir);
         if exist(pth, 'dir')
@@ -681,6 +708,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
             opts.nopaths = true;
         elseif strcmpi(curArg, '--local')
             opts.local_install = true;
+            pkg.local_install = true;
         elseif strcmpi(curArg, '-e')
             opts.local_install_uselocal = true;
             pkg.no_rmdir_on_uninstall = true;
