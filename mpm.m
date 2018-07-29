@@ -129,6 +129,9 @@ function removePackage(pkg, opts)
     for ii = 1:numel(pkgsToRm)
         pkg = pkgsToRm(ii);
         if exist(pkg.installdir, 'dir')
+            % check for uninstall file
+            checkForFileAndRun(pkg.mdir, 'uninstall.m', opts);
+            
             % remove old directory
             rmdir(pkg.installdir, 's');
         end
@@ -343,7 +346,7 @@ function [pkg, isOk] = installPackage(pkg, opts)
     
     if isOk
         % check for install.m and run after confirming
-        checkForInstallFile(pkg.mdir, opts);
+        checkForFileAndRun(pkg.mdir, 'install.m', opts);
     end
     
 end
@@ -761,11 +764,11 @@ function readRequirementsFile(fnm, opts)
     end
 end
 
-function checkForInstallFile(installdir, opts)
-    fnm = fullfile(installdir, 'install.m');
+function checkForFileAndRun(installdir, fnm, opts)
+    fpath = fullfile(installdir, fnm);
     
     % check for install file and read comments at top
-    fid = fopen(fnm);
+    fid = fopen(fpath);
     if fid == -1
         return;
     end
@@ -782,25 +785,25 @@ function checkForInstallFile(installdir, opts)
     end
     
     % verify
-    disp(['install.m file found at ' fnm]);
+    disp([fnm ' file found at ' fpath]);
     if numel(lines) > 0
         disp('Showing first lines of comments:');
         disp(strjoin(lines, '\n'));
     end
     if ~opts.force
-        reply = input('Run install.m (y/n)? ', 's');
+        reply = input(['Run ' fnm ' (y/n)? '], 's');
         if isempty(reply)
             reply = 'y';
         end
         if ~strcmpi(reply(1), 'y')
-            disp('Skipping install.m.');
+            disp(['Skipping ' fnm '.']);
             return;
         end
-        disp('Running install.m ...');
+        disp(['Running ' fnm ' ...']);
     else
-        disp('Running install.m (--force was on)...');
+        disp(['Running ' fnm ' (--force was on)...']);
     end
     
     % run
-    run(fnm);
+    run(fpath);
 end
