@@ -86,15 +86,15 @@ If you restart Matlab, you'll want to run `mpm init` to re-add all the folders i
 ## mpmimport
 
 `mpmimport` is an experimental function meant to approximate the `import package` namespace management features in most modern languages (modeled after Python). 
-In languages such as Python, you must explicitely state which packages and functions you want your current script to have access to by adding `import XXX` statements to the top of the script (or in your shell). This allows you to control the global namespace, prevent silent name clashes (two functions with the same name on your matlab path that do different things) and be generally explicit about what your script requires (better for sharing your code with others or future you...). The `mpm` package manager provides excellent facilities for automatically downloading packages and adding them to a standard location, and `mpmimport` is meant to compliment this by dynamically adding packages to your path as needed. 
+In languages such as Python, you must explicitely state which packages and functions you want your current script to have access to by adding `import XXX` statements to the top of the script (or in your console). This allows you to control the global namespace, prevent silent name clashes (two functions with the same name on your matlab path that do different things) and be generally explicit about what your script requires (better for sharing your code with others or future you...). The `mpm` package manager provides excellent facilities for automatically downloading packages and adding them to a standard location, and `mpmimport` is meant to compliment this by dynamically adding packages to your path as needed. 
 
-For example, install `imstack` from matlab file exchange without modifying the path (using the `--nopaths` flag):
+For example, install `imstack` from matlab file exchange  (https://www.mathworks.com/matlabcentral/fileexchange/55546-imstack) without modifying the path (using the `--nopaths` flag):
 
 ``` matlab
 mpm install imstack --nopaths
 ```
 
-Now, one of the main functions in `imstack` is `addRoiToolbar`. To confirm that it is not on your path at the moment, type the following into the matlab shell:
+Now, one of the main functions in `imstack` is `addRoiToolbar`. To confirm that it is not on your path at the moment, type the following into the matlab console:
 
 ``` matlab
 help addRoiToolbar
@@ -123,7 +123,6 @@ Returns:
 
 ``` matlab
 
-help addRoiToolbar
  addRoiToolbar
  Add a toolbar for creating ROIs like Line Ellipse Rectangle Polygon and Freehand
  Right-click the ROIs to open a context menu, and you will see more
@@ -135,7 +134,7 @@ help addRoiToolbar
     addRoiToolbar;
 ```
 
-Note that the path will be modified for the duration of the session if you run this in a script or in the shell. 
+Note that the path will be modified for the duration of the session if you run this in a script or in the console. 
 
 
 
