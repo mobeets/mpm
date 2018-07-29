@@ -341,6 +341,11 @@ function [pkg, isOk] = installPackage(pkg, opts)
     pkg.date_downloaded = datestr(datetime);
     pkg.mdir = findMDirOfPackage(pkg);
     
+    if isOk
+        % check for install.m and run after confirming
+        checkForInstallFile(pkg.mdir, opts);
+    end
+    
 end
 
 function isOk = checkoutFromUrl(pkg)
@@ -754,4 +759,48 @@ function readRequirementsFile(fnm, opts)
         cmd = strsplit(cmds{ii});
         mpm(opts.action, cmd{:});
     end
+end
+
+function checkForInstallFile(installdir, opts)
+    fnm = fullfile(installdir, 'install.m');
+    
+    % check for install file and read comments at top
+    fid = fopen(fnm);
+    if fid == -1
+        return;
+    end
+    lines = {};
+    line = '%';
+    while ~isnumeric(line) && numel(line) > 0 && strcmpi(line(1), '%')
+        line = fgetl(fid);
+        if ~isnumeric(line) && numel(line) > 0 && strcmpi(line(1), '%')
+            lines = [lines line];
+        end
+    end
+    if fid ~= -1
+        fclose(fid);
+    end
+    
+    % verify
+    disp(['install.m file found at ' fnm]);
+    if numel(lines) > 0
+        disp('Showing first lines of comments:');
+        disp(strjoin(lines, '\n'));
+    end
+    if ~opts.force
+        reply = input('Run install.m (y/n)? ', 's');
+        if isempty(reply)
+            reply = 'y';
+        end
+        if ~strcmpi(reply(1), 'y')
+            disp('Skipping install.m.');
+            return;
+        end
+        disp('Running install.m ...');
+    else
+        disp('Running install.m (--force was on)...');
+    end
+    
+    % run
+    run(fnm);
 end
