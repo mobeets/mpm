@@ -509,9 +509,6 @@ function [m, metafile] = getMetadata(opts)
         if ~isfield(pkg, 'no_rmdir_on_uninstall')
             pkg.no_rmdir_on_uninstall = false;
         end
-        if ~isfield(pkg, 'pathlist')
-            pkg.pathlist = [];
-        end
         pth = fullfile(pkg.installdir, pkg.mdir);
         if exist(pth, 'dir')
             clean_pkgs = [clean_pkgs pkg];
@@ -593,7 +590,7 @@ function success = updatePath(pkg, opts)
             addpath(pth);
         end
         
-        % now check pathlist
+        % check for pathlist.m file
         pathfile = fullfile(pth, 'pathlist.m');
         genpath = checkForPathlistAndGenpath(pathfile, pth);
         if numel(genpath) > 0 && ~opts.debug
