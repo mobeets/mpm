@@ -14,7 +14,7 @@ function mpm(action, varargin)
 % 
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
-%   infile (-i): if set, will run mpm2 on all packages listed in file
+%   infile (-i): if set, will run mpm on all packages listed in file
 %   installdir (-d): where to install package
 %   query (-q): if name is different than query
 %   internaldir (-n): lets user set which directories inside package to add to path
@@ -25,6 +25,7 @@ function mpm(action, varargin)
 %   --force (-f): install package even if name already exists in InstallDir
 %   --debug: do not install anything or update paths; just pretend
 %   --nopaths: do not add anything to path after installing
+%   --local: url is a path to a local directory to install (-e to not copy)
 % 
     
     % parse and validate command line args
@@ -38,7 +39,7 @@ function mpm(action, varargin)
     
     % installing from requirements
     if ~isempty(opts.infile)
-        % read filename, and call mpm2 for all lines in this file
+        % read filename, and call mpm for all lines in this file
         readRequirementsFile(opts.infile, opts);
         return;        
     end
@@ -90,8 +91,12 @@ function success = findAndSetupPackage(pkg, opts)
     end
     
     % download package and add to metadata
-    if ~isempty(pkg.url) && strcmpi(opts.action, 'install')        
-        disp(['   Downloading ' pkg.url '...']);
+    if ~isempty(pkg.url) && strcmpi(opts.action, 'install')
+        if ~opts.local_install
+            disp(['   Downloading ' pkg.url '...']);
+        else
+            disp(['   Installing local package ' pkg.url '...']);
+        end
         [pkg, isOk] = installPackage(pkg, opts);
         if ~isempty(pkg) && isOk
             opts = addToMetadata(pkg, opts);
@@ -128,12 +133,19 @@ function removePackage(pkg, opts)
     end
     for ii = 1:numel(pkgsToRm)
         pkg = pkgsToRm(ii);
+        
+        % check for uninstall file
+        checkForFileAndRun(pkg.mdir, 'uninstall.m', opts);
+        
         if exist(pkg.installdir, 'dir')
-            % check for uninstall file
-            checkForFileAndRun(pkg.mdir, 'uninstall.m', opts);
-            
             % remove old directory
-            rmdir(pkg.installdir, 's');
+            if ~pkg.no_rmdir_on_uninstall
+                rmdir(pkg.installdir, 's');
+            else
+                disp(['Not removing directory because ' ...
+                    'it was pre-existing before install: "' ...
+                    pkg.installdir '"']);
+            end
         end
     end
     
@@ -159,7 +171,7 @@ function listPackages(opts)
         if ~isempty(pkg.release_tag)
             nm = [nm '==' pkg.release_tag];
         end
-        disp(['- ' nm]);
+        disp(['- ' nm ' (' pkg.date_downloaded ')']);
     end
 end
 
@@ -172,12 +184,16 @@ function [pkg, opts] = setDefaultOpts()
     pkg.internaldir = '';
     pkg.release_tag = '';
     pkg.addpath = true;
+    pkg.local_install = false;
+    pkg.no_rmdir_on_uninstall = false;
     
     opts = mpm_config(); % load default opts from config file
     opts.installdir = opts.DEFAULT_INSTALL_DIR;
 %     opts.update_mpm_paths = false; % set in mpm_config
     opts.searchgithubfirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
-    opts.update_all_paths = false;    
+    opts.update_all_paths = false;
+    opts.local_install = false;
+    opts.local_install_uselocal = false;
     
     opts.infile = '';    
     opts.force = false;
@@ -310,6 +326,7 @@ function [pkg, isOk] = installPackage(pkg, opts)
     if opts.debug
         return;
     end
+    isOk = true;
     
     % check for previous package
     if exist(pkg.installdir, 'dir') && ~opts.force
@@ -323,11 +340,11 @@ function [pkg, isOk] = installPackage(pkg, opts)
         rmdir(pkg.installdir, 's');
     end
     
-    if ~isempty(strfind(pkg.url, '.git')) && ...
+    if ~opts.local_install && ~isempty(strfind(pkg.url, '.git')) && ...
             isempty(strfind(pkg.url, 'github.com'))
         % install with git clone because not on github
         isOk = checkoutFromUrl(pkg);        
-    else
+    elseif ~opts.local_install
         % download zip
         pkg.url = handleCustomUrl(pkg.url);
         isOk = unzipFromUrl(pkg);
@@ -335,6 +352,21 @@ function [pkg, isOk] = installPackage(pkg, opts)
             isempty(strfind(pkg.url, '.git'))
             warning(['If you were trying to install a github repo, ', ...
                 'try adding ".git" to the end.']);
+        end
+    else
+        % make sure path exists
+        if ~exist(pkg.url, 'dir')
+            warning(['Provided path to local directory does not ' ...
+                'exist: "' pkg.url '"']);
+            isOk = false; return;
+        end
+        
+        % copy directory to installdir
+        if ~opts.local_install_uselocal
+            mkdir(pkg.installdir);
+            isOk = copyfile(pkg.installdir, pkg.url);
+        else
+            pkg.installdir = pkg.url;
         end
     end
     if ~isOk
@@ -445,9 +477,16 @@ function [m, metafile] = getMetadata(opts)
     pkgs = m.packages;
     clean_pkgs = [];
     for ii = 1:numel(pkgs)
-        pth = fullfile(pkgs(ii).installdir, pkgs(ii).mdir);
+        pkg = pkgs(ii);
+        if ~isfield(pkg, 'local_install')
+            pkg.local_install = false;
+        end
+        if ~isfield(pkg, 'no_rmdir_on_uninstall')
+            pkg.no_rmdir_on_uninstall = false;
+        end
+        pth = fullfile(pkg.installdir, pkg.mdir);
         if exist(pth, 'dir')
-            clean_pkgs = [clean_pkgs pkgs(ii)];
+            clean_pkgs = [clean_pkgs pkg];
         end
     end
     m.packages = clean_pkgs;
@@ -573,6 +612,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', '--nopaths', ...
+        '--local', '-e', ...
         '-u', '-q', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
     
     % no additional args
@@ -639,6 +679,11 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         elseif strcmpi(curArg, '--nopaths')
             pkg.addpath = false;
             opts.nopaths = true;
+        elseif strcmpi(curArg, '--local')
+            opts.local_install = true;
+        elseif strcmpi(curArg, '-e')
+            opts.local_install_uselocal = true;
+            pkg.no_rmdir_on_uninstall = true;
         else
             error(['Did not recognize argument ''' curArg '''.']);
         end
@@ -703,6 +748,14 @@ function isOk = validateArgs(pkg, opts)
             'Cannot specify release_tag when running ''freeze''');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst when running ''freeze''');
+    end
+    if opts.local_install
+        assert(~isempty(pkg.url), ...
+            'Must specify local path with -u when running ''--local''');
+    end
+    if opts.local_install_uselocal
+        assert(opts.local_install, ...
+            'Can only specify -e when running ''--local''');
     end
 end
 
