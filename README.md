@@ -22,6 +22,8 @@ __Install (searches FileExchange and Github):__
 >> mpm install export_fig
 ```
 
+When installing, mpm checks for a file in the package called `install.m`, which it will run after confirming (or add `--force` to auto-confirm). It also checks for a file called `pathlist.m` which tells it which paths (if any) to add.
+
 __Install a particular Github release (by tag)__
 
 ```
@@ -33,6 +35,8 @@ __Uninstall__
 ```
 >> mpm uninstall matlab2tikz
 ```
+
+When uninstalling, mpm checks for a file in the package called `uninstall.m`, which it will run after confirming (or add `--force` to auto-confirm).
 
 __Search without installing:__
 
