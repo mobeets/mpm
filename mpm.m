@@ -570,6 +570,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     % no additional args
     if numel(remainingArgs) == 0
         if strcmpi(opts.action, 'freeze')
+            pkg.query = '';
             return;
         else
             error('You must specify a package name or a filename.');
