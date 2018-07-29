@@ -135,7 +135,8 @@ function removePackage(pkg, opts)
         pkg = pkgsToRm(ii);
         
         % check for uninstall file
-        checkForFileAndRun(pkg.mdir, 'uninstall.m', opts);
+        pth = fullfile(pkg.installdir, pkg.mdir);
+        checkForFileAndRun(pth, 'uninstall.m', opts);
         
         if exist(pkg.installdir, 'dir')
             % remove old directory
@@ -402,7 +403,8 @@ function [pkg, isOk] = installPackage(pkg, opts)
     
     if isOk
         % check for install.m and run after confirming
-        checkForFileAndRun(pkg.mdir, 'install.m', opts);
+        pth = fullfile(pkg.installdir, pkg.mdir);
+        checkForFileAndRun(pth, 'install.m', opts);
     end
     
 end
@@ -591,6 +593,17 @@ function success = updatePath(pkg, opts)
             disp(['   Adding to path: ' pth]);
             addpath(pth);
         end
+        
+        % now check pathlist
+        pathfile = fullfile(pth, 'pathlist.m');
+        genpath = checkForPathlistAndGenpath(pathfile, pth);
+        if numel(genpath) > 0 && ~opts.debug
+            disp('   Also adding paths found in pathlist.m');
+            addpath(genpath);
+        end
+    else
+        warning(['Path to package does not exist: ' pth]);
+        return;
     end
 end
 
@@ -890,12 +903,14 @@ function checkForFileAndRun(installdir, fnm, opts)
 end
 
 function pathlist = checkForPathlistAndGenpath(fpath, basedir)
+    
+    pathlist = '';
+    
     fid = fopen(fpath);
     if fid == -1
         return;
     end
-    
-    pathlist = '';
+
     line = '';
     while ~isnumeric(line)
         line = fgetl(fid);
