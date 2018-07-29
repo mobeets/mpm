@@ -192,7 +192,6 @@ function [pkg, opts] = setDefaultOpts()
     pkg.addpath = true;
     pkg.local_install = false;
     pkg.no_rmdir_on_uninstall = false;
-    pkg.pathlist = [];
     
     opts = mpm_config(); % load default opts from config file
     opts.installdir = opts.DEFAULT_INSTALL_DIR;
