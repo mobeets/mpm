@@ -83,6 +83,62 @@ By default, mpm installs all Matlab packages to the directory `mpm-packages/`. (
 
 If you restart Matlab, you'll want to run `mpm init` to re-add all the folders in the installation directory to your Matlab path. Better yet, just run `mpm init` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html).
 
+## mpmimport
+
+`mpmimport` is an experimental function meant to approximate the `import package` namespace management features in most modern languages (modeled after Python). 
+In languages such as Python, you must explicitely state which packages and functions you want your current script to have access to by adding `import XXX` statements to the top of the script (or in your shell). This allows you to control the global namespace, prevent silent name clashes (two functions with the same name on your matlab path that do different things) and be generally explicit about what your script requires (better for sharing your code with others or future you...). The `mpm` package manager provides excellent facilities for automatically downloading packages and adding them to a standard location, and `mpmimport` is meant to compliment this by dynamically adding packages to your path as needed. 
+
+For example, install `imstack` from matlab file exchange without modifying the path (using the `--nopaths` flag):
+
+``` matlab
+mpm install imstack --nopaths
+```
+
+Now, one of the main functions in `imstack` is `addRoiToolbar`. To confirm that it is not on your path at the moment, type the following into the matlab shell:
+
+``` matlab
+help addRoiToolbar
+```
+Returns:
+
+``` matlab
+addRoiToolbar not found.
+
+Use the Help browser search field to search the documentation, or
+type "help help" for help command options, such as help for methods.
+```
+
+Now run the following in the console:
+
+``` matlab
+mpmimport("imstack")
+```
+
+When you type repeat the help query above, you should see the following now:
+
+``` matlab
+help addRoiToolbar
+```
+Returns:
+
+``` matlab
+
+help addRoiToolbar
+ addRoiToolbar
+ Add a toolbar for creating ROIs like Line Ellipse Rectangle Polygon and Freehand
+ Right-click the ROIs to open a context menu, and you will see more
+ functions there such as histogram, x-y plot, etc.
+ Example:
+ 
+    load mri;
+    imshow(D(:,:,14))
+    addRoiToolbar;
+```
+
+Note that the path will be modified for the duration of the session if you run this in a script or in the shell. 
+
+
+
 ## Troubleshooting
 
 Because there's no standard directory structure for a Matlab package, automatically adding paths can get a bit messy. When mpm downloads a package, it adds a single folder within that package to your Matlab path. If there are no `*.m` files in the package's base directory, it looks in folders called 'bin', 'src', 'lib', or 'code' instead. You can specify the name of an internal directory by passing in an `-n` or `internaldir` argument.
