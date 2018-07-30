@@ -87,7 +87,7 @@ Note that the default installation directory is `mpm-packages/`.
 
 Specifying a requirements file lets you install or search for multiple packages at once. See 'requirements-example.txt' for an example. Make sure to provide an absolute path to the file!
 
-By default, mpm tries to find the best folder in the package to add to your Matlab path. To install a package without modifying any paths, set `--nopaths`.
+By default, mpm tries to find the best folder in the package to add to your Matlab path. To install a package without modifying any paths, set `--nopaths`. Or to add _all_ subfolders in a package to the path, set `--allpaths`.
 
 ## What it does
 
