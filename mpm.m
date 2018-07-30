@@ -380,7 +380,7 @@ function [pkg, isOk] = installPackage(pkg, opts)
                 isOk = false; return;
             end
             mkdir(pkg.installdir);
-            isOk = copyfile(pkg.installdir, pkg.url);
+            isOk = copyfile(pkg.url, pkg.installdir);
         else % no copy; just track the provided path
             % make sure we have absolute path
             if ~isempty(strfind(pkg.url, pwd))
@@ -432,7 +432,11 @@ function [isOk, pkg] = unzipFromUrl(pkg)
     try
         zipfnm = websave(zipfnm, pkg.url);
     catch ME
+        % handle 404 from File Exchange for getting updated download url
         ps = strsplit(ME.message, 'for URL, ');
+        if numel(ps) < 2
+            isOk = false; return;
+        end
         ps = strsplit(ps{2}, 'github_repo.zip');
         pkg.url = ps{1}(2:end);
         zipfnm = websave(zipfnm, pkg.url);
