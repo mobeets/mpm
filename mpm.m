@@ -266,7 +266,10 @@ function url = findUrlOnFileExchange(pkg)
     if ~isempty(tokens)
         url = tokens{1}{1};
         url = [url '?download=true'];
-%         https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/23629/versions/101/download/zip
+%         url_format = @(aid, ver) ['https://www.mathworks.com/' ...
+%             'matlabcentral/mlc-downloads/downloads/submissions/' aid ...
+%             '/versions/' version '/download/zip'];
+%         url = url_format(aid, '101'); % 101 works for all? we'll see
     else
         url = '';
     end
@@ -355,7 +358,7 @@ function [pkg, isOk] = installPackage(pkg, opts)
     elseif ~opts.local_install
         % download zip
         pkg.url = handleCustomUrl(pkg.url);
-        isOk = unzipFromUrl(pkg);
+        [isOk, pkg] = unzipFromUrl(pkg);
         if ~isOk && ~isempty(strfind(pkg.url, 'github.com')) && ...
             isempty(strfind(pkg.url, '.git'))
             warning(['If you were trying to install a github repo, ', ...
@@ -421,12 +424,19 @@ function isOk = checkoutFromUrl(pkg)
     end
 end
 
-function isOk = unzipFromUrl(pkg)
+function [isOk, pkg] = unzipFromUrl(pkg)
 % download from url to installdir
     isOk = true;
     
     zipfnm = [tempname '.zip'];
-    zipfnm = websave(zipfnm, pkg.url);
+    try
+        zipfnm = websave(zipfnm, pkg.url);
+    catch ME
+        ps = strsplit(ME.message, 'for URL, ');
+        ps = strsplit(ps{2}, 'github_repo.zip');
+        pkg.url = ps{1}(2:end);
+        zipfnm = websave(zipfnm, pkg.url);
+    end
     try
         unzip(zipfnm, pkg.installdir);
     catch
