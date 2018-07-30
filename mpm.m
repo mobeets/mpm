@@ -25,6 +25,7 @@ function mpm(action, varargin)
 %   --force (-f): install package even if name already exists in InstallDir
 %   --debug: do not install anything or update paths; just pretend
 %   --nopaths: do not add anything to path after installing
+%   --allpaths: add path to all subfolders in package
 %   --local: url is a path to a local directory to install (-e to not copy)
 % 
     
@@ -50,8 +51,7 @@ function mpm(action, varargin)
     % mpm init
     if strcmpi(opts.action, 'init')
         opts.update_mpm_paths = true;
-        pkg.addpath = false; % ignore dummy pkg
-        updatePaths(pkg, opts);
+        updatePaths(opts);
         return;
     end
     
@@ -102,7 +102,7 @@ function success = findAndSetupPackage(pkg, opts)
             opts = addToMetadata(pkg, opts);
             if pkg.addpath
                 disp('Updating paths...');
-                updatePaths(pkg, opts);
+                updatePath(pkg, opts);
             end
         end
     end
@@ -192,6 +192,7 @@ function [pkg, opts] = setDefaultOpts()
     pkg.addpath = true;
     pkg.local_install = false;
     pkg.no_rmdir_on_uninstall = false;
+    pkg.add_all_dirs_to_path = false;
     
     opts = mpm_config(); % load default opts from config file
     opts.installdir = opts.DEFAULT_INSTALL_DIR;
@@ -524,6 +525,9 @@ function [m, metafile] = getMetadata(opts)
         if ~isfield(pkg, 'no_rmdir_on_uninstall')
             pkg.no_rmdir_on_uninstall = false;
         end
+        if ~isfield(pkg, 'add_all_dirs_to_path')
+            pkg.add_all_dirs_to_path = false;
+        end
         pth = fullfile(pkg.installdir, pkg.mdir);
         if exist(pth, 'dir')
             clean_pkgs = [clean_pkgs pkg];
@@ -563,15 +567,8 @@ function opts = addToMetadata(pkg, opts)
     end
 end
 
-function updatePaths(pkg, opts)
+function updatePaths(opts)
 % read metadata file and add all paths listed
-    
-    % add mdir to path for current package
-    nmsAdded = {};
-    success = updatePath(pkg, opts);
-    if success
-        nmsAdded = [nmsAdded pkg.name];
-    end
     
     % add mdir to path for each package in metadata (optional)
     if opts.update_mpm_paths
@@ -605,12 +602,18 @@ function success = updatePath(pkg, opts)
             addpath(pth);
         end
         
-        % check for pathlist.m file
-        pathfile = fullfile(pth, 'pathlist.m');
-        genpath = checkForPathlistAndGenpath(pathfile, pth);
-        if numel(genpath) > 0 && ~opts.debug
-            disp('   Also adding paths found in pathlist.m');
-            addpath(genpath);
+        % add all folders to path
+        if pkg.add_all_dirs_to_path
+            disp('   Also adding paths to all sub-folders (--allpaths).');
+            addpath(genpath(pth));
+            
+        else % check for pathlist.m file
+            pathfile = fullfile(pth, 'pathlist.m');
+            paths_to_add = checkForPathlistAndGenpath(pathfile, pth);
+            if numel(paths_to_add) > 0 && ~opts.debug
+                disp('   Also adding paths found in pathlist.m');
+                addpath(paths_to_add);
+            end
         end
     else
         warning(['Path to package does not exist: ' pth]);
@@ -663,7 +666,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', '--nopaths', ...
-        '--local', '-e', ...
+        '--allpaths', '--local', '-e', ...
         '-u', '-q', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
     
     % no additional args
@@ -730,6 +733,8 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         elseif strcmpi(curArg, '--nopaths')
             pkg.addpath = false;
             opts.nopaths = true;
+        elseif strcmpi(curArg, '--allpaths')
+            pkg.add_all_dirs_to_path = true;
         elseif strcmpi(curArg, '--local')
             opts.local_install = true;
             pkg.local_install = true;
