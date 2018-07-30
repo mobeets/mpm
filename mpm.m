@@ -77,7 +77,7 @@ function success = findAndSetupPackage(pkg, opts)
     disp(['Collecting ''' pkg.name '''...']);
     
     % check if exists
-    if ~opts.force && ...
+    if ~opts.force && ~strcmpi(opts.action, 'search') && ...
             ~isempty(indexInMetadata(pkg, opts.metadata.packages))
         warning(['   Package already exists. ' ...
             'Re-run with --force to overwrite.']);
@@ -266,6 +266,7 @@ function url = findUrlOnFileExchange(pkg)
     if ~isempty(tokens)
         url = tokens{1}{1};
         url = [url '?download=true'];
+%         https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/23629/versions/101/download/zip
     else
         url = '';
     end
