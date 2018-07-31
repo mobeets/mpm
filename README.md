@@ -79,7 +79,23 @@ __Install/uninstall packages in a specific directory:__
 
 Note that the default installation directory is `mpm-packages/`.
 
-### Install multiple packages using a requirements file
+## Environments ("Collections")
+
+mpm has rudimentary support for managing collections of packages. To specify which collection to act on, use `-c [collection_name]`. Default collection is "default".
+
+```
+>> mpm install cbrewer -c test
+Using collection "test"
+Collecting 'cbrewer'...
+   Found url: https://www.mathworks.com/matlabcentral/fileexchange/58350-cbrewer2?download=true
+   Downloading https://www.mathworks.com/matlabcentral/fileexchange/58350-cbrewer2?download=true...
+>> mpm init -c test
+Using collection "test"
+   Adding to path: /Users/mobeets/code/mpm/mpm-packages/mpm-collections/test/cbrewer
+   Added paths for 1 package(s).
+```
+
+## Installing multiple packages from file
 
 ```
 >> mpm install -i /Users/mobeets/example/requirements.txt
