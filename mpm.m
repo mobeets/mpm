@@ -54,6 +54,8 @@ function mpm(action, varargin)
 % For more help, or to report an issue, see <a href="matlab: 
 % web('https://github.com/mobeets/mpm')">the mpm Github page</a>.
 %
+
+    % print help info if no arguments were provided
     if nargin < 1
         run('help(''mpm'')');
         return;
@@ -216,7 +218,7 @@ function [pkg, opts] = setDefaultOpts()
 
     % empty package
     pkg.name = '';
-    pkg.url = '';    
+    pkg.url = '';
     pkg.internaldir = '';
     pkg.release_tag = '';
     pkg.addpath = true;
@@ -385,7 +387,10 @@ function [pkg, isOk] = installPackage(pkg, opts)
     if ~opts.local_install && ~isempty(strfind(pkg.url, '.git')) && ...
             isempty(strfind(pkg.url, 'github.com'))
         % install with git clone because not on github
-        isOk = checkoutFromUrl(pkg);        
+        isOk = checkoutFromUrl(pkg);
+        if ~isOk
+            warning('Error using git clone');
+        end
     elseif ~opts.local_install
         % download zip
         pkg.url = handleCustomUrl(pkg.url);
@@ -394,6 +399,8 @@ function [pkg, isOk] = installPackage(pkg, opts)
             isempty(strfind(pkg.url, '.git'))
             warning(['If you were trying to install a github repo, ', ...
                 'try adding ".git" to the end.']);
+        elseif ~isOk
+            warning('Error downloading zip.');
         end
     else % local install (using pre-existing local directory)
         % make sure path exists
@@ -412,6 +419,9 @@ function [pkg, isOk] = installPackage(pkg, opts)
             end
             mkdir(pkg.installdir);
             isOk = copyfile(pkg.url, pkg.installdir);
+            if ~isOk
+                warning('Error copying directory.');
+            end
         else % no copy; just track the provided path
             % make sure we have absolute path
             if ~isempty(strfind(pkg.url, pwd))
@@ -546,18 +556,20 @@ function [m, metafile] = getMetadata(opts)
         m.packages = [];
     end
     pkgs = m.packages;
+    default_pkg = setDefaultOpts();
+    allfnms = fieldnames(default_pkg);
+    
     clean_pkgs = [];
     for ii = 1:numel(pkgs)
         pkg = pkgs(ii);
-        if ~isfield(pkg, 'local_install')
-            pkg.local_install = false;
+        
+        % set any missing fields to default value
+        missing_fields = setdiff(allfnms, fieldnames(pkg));
+        for jj = 1:numel(missing_fields)
+            cfld = missing_fields{jj};
+            pkg.(cfld) = default_pkg.(cfld);
         end
-        if ~isfield(pkg, 'no_rmdir_on_uninstall')
-            pkg.no_rmdir_on_uninstall = false;
-        end
-        if ~isfield(pkg, 'add_all_dirs_to_path')
-            pkg.add_all_dirs_to_path = false;
-        end
+
         pth = fullfile(pkg.installdir, pkg.mdir);
         if exist(pth, 'dir')
             clean_pkgs = [clean_pkgs pkg];
