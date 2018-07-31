@@ -899,7 +899,7 @@ function readRequirementsFile(fnm, opts)
         
         % now append opts as globals for each line in file
         if ~isempty(line)
-            cmd = [line ' installdir ' opts.installdir];
+            cmd = [line ' -d ' opts.installdir];
             if opts.force
                 cmd = [cmd ' --force'];
             end
