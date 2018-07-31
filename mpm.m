@@ -49,7 +49,7 @@ function mpm(action, varargin)
 %   --githubfirst (-g): check github for url before matlab fileexchange
 %   --force (-f): install package even if name already exists in InstallDir
 %   --debug: do not install anything or update paths; just pretend
-%   --nopaths: do not add anything to path after installing
+%   --nopaths: no paths are added after installing (default if -c is specified)
 %   --allpaths: add path to all subfolders in package
 %   --local: url is a path to a local directory to install (add '-e' to not copy)
 % 
@@ -135,7 +135,7 @@ function success = findAndSetupPackage(pkg, opts)
         [pkg, isOk] = installPackage(pkg, opts);
         if ~isempty(pkg) && isOk
             opts = addToMetadata(pkg, opts);
-            if pkg.addpath
+            if ~opts.nopaths
                 disp('Updating paths...');
                 updatePath(pkg, opts);
             end
@@ -805,6 +805,9 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         opts.metadir = fullfile(opts.metadir, 'mpm-collections', ...
             opts.collection);
         opts.installdir = opts.metadir;
+        if strcmpi(opts.action, 'install')
+            opts.nopaths = true;
+        end
     end
 end
 
