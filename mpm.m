@@ -570,6 +570,7 @@ function [m, metafile] = getMetadata(opts)
             pkg.(cfld) = default_pkg.(cfld);
         end
 
+        % handle manually-deleted packages by skipping if dir doesn't exist
         pth = fullfile(pkg.installdir, pkg.mdir);
         if exist(pth, 'dir')
             clean_pkgs = [clean_pkgs pkg];
@@ -708,8 +709,8 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     end
     
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
-        'release_tag', '--githubfirst', '--force', '--nopaths', ...
-        '--allpaths', '--local', '-e', ...
+        'release_tag', '--githubfirst', '--force', ...
+        '--nopaths', '--allpaths', '--local', '-e', ...
         '-u', '-q', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
     
     % no additional args
@@ -877,6 +878,8 @@ function readRequirementsFile(fnm, opts)
                     '''infile'',  ''installdir''.)']);
             end
         end
+        
+        % if args are specified inside file, don't allow specifying w/ opts
         if opts.force && (~isempty(strfind(line, ' --force')) || ...
                 ~isempty(strfind(line, ' -f')))
             error('Cannot set --force because it is in infile.');
@@ -884,6 +887,17 @@ function readRequirementsFile(fnm, opts)
         if opts.nopaths && ~isempty(strfind(line, ' --nopaths'))
             error('Cannot set --nopaths because it is in infile.');
         end
+        if opts.allpaths && ~isempty(strfind(line, ' --allpaths'))
+            error('Cannot set --allpaths because it is in infile.');
+        end
+        if opts.local_install && ~isempty(strfind(line, ' --local'))
+            error('Cannot set --local because it is in infile.');
+        end
+        if opts.local_install_uselocal && ~isempty(strfind(line, ' -e'))
+            error('Cannot set -e because it is in infile.');
+        end
+        
+        % now append opts as globals for each line in file
         if ~isempty(line)
             cmd = [line ' installdir ' opts.installdir];
             if opts.force
@@ -891,6 +905,15 @@ function readRequirementsFile(fnm, opts)
             end
             if opts.nopaths
                 cmd = [cmd ' --nopaths'];
+            end
+            if opts.allpaths
+                cmd = [cmd ' --allpaths'];
+            end
+            if opts.local_install
+                cmd = [cmd ' --local'];
+            end
+            if opts.local_install_uselocal
+                cmd = [cmd ' -e'];
             end
             cmds = [cmds cmd];
         end
