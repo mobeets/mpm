@@ -571,6 +571,7 @@ function updatePaths(opts)
 % read metadata file and add all paths listed
     
     % add mdir to path for each package in metadata (optional)
+    nmsAdded = {};
     if opts.update_mpm_paths
         pkgs = opts.metadata.packages;
         for ii = 1:numel(pkgs)
