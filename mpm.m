@@ -40,16 +40,18 @@ function mpm(action, varargin)
 %   infile (-i): if set, will run mpm on all packages listed in file
 %   installdir (-d): where to install package
 %   query (-q): if name is different than query
-%   internaldir (-n): lets user set which directories inside package to add to path
 %   release_tag (-t): if url is found on github, this lets user set release tag
-% 
+%   internaldir (-n): lets user set which directories inside package to add to path
+%   collection (-c): override mpm's default package collection ("default")
+%   by specifying a custom collection name
+%
 % arguments that are true if passed (otherwise they are false):
 %   --githubfirst (-g): check github for url before matlab fileexchange
 %   --force (-f): install package even if name already exists in InstallDir
 %   --debug: do not install anything or update paths; just pretend
 %   --nopaths: do not add anything to path after installing
 %   --allpaths: add path to all subfolders in package
-%   --local: url is a path to a local directory to install (-e to not copy)
+%   --local: url is a path to a local directory to install (add '-e' to not copy)
 % 
 % For more help, or to report an issue, see <a href="matlab: 
 % web('https://github.com/mobeets/mpm')">the mpm Github page</a>.
@@ -69,6 +71,7 @@ function mpm(action, varargin)
         warning(['Debug mode. No packages will actually be installed, ' ...
             'or added to metadata or paths.']);
     end
+    disp(['Using collection "' opts.collection '"']);
     
     % installing from requirements
     if ~isempty(opts.infile)
@@ -225,11 +228,13 @@ function [pkg, opts] = setDefaultOpts()
     pkg.local_install = false;
     pkg.no_rmdir_on_uninstall = false;
     pkg.add_all_dirs_to_path = false;
+    pkg.collection = 'default';
     
     opts = mpm_config(); % load default opts from config file
     opts.installdir = opts.DEFAULT_INSTALL_DIR;
-    opts.update_mpm_paths = false; % set in mpm_config
+    opts.metadir = opts.DEFAULT_INSTALL_DIR;
     opts.searchgithubfirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
+    opts.update_mpm_paths = false;    
     opts.update_all_paths = false;
     opts.local_install = false;
     opts.local_install_uselocal = false;
@@ -238,6 +243,7 @@ function [pkg, opts] = setDefaultOpts()
     opts.force = false;
     opts.debug = false;
     opts.nopaths = false;
+    opts.collection = pkg.collection;    
 end
 
 function url = handleCustomUrl(url)
@@ -546,7 +552,8 @@ function mdir = findMDirOfPackage(pkg)
 end
 
 function [m, metafile] = getMetadata(opts)
-    metafile = fullfile(opts.installdir, 'mpm.mat');
+
+    metafile = fullfile(opts.metadir, 'mpm.mat');
     if exist(metafile, 'file')
         m = load(metafile);
     else
@@ -624,7 +631,12 @@ function updatePaths(opts)
             end
         end
     end
-    disp(['   Added paths for ' num2str(numel(nmsAdded)) ' package(s).']);
+    if numel(pkgs) == 0
+        disp('   No packages found in collection.');
+    else
+        disp(['   Added paths for ' num2str(numel(nmsAdded)) ...
+            ' package(s).']);
+    end
     
     % also add all folders listed in install_dir (optional)
     if opts.update_all_paths
@@ -701,21 +713,14 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
     
-    if strcmpi(opts.action, 'init')
-        if ~isempty(remainingArgs)
-            error('If running ''init'', no other arguments are needed.');
-        end
-        return;
-    end
-    
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', ...
-        '--nopaths', '--allpaths', '--local', '-e', ...
+        '--nopaths', '--allpaths', '--local', '-e', 'collection', '-c', ...
         '-u', '-q', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
     
     % no additional args
     if numel(remainingArgs) == 0
-        if strcmpi(opts.action, 'freeze')
+        if strcmpi(opts.action, 'freeze') || strcmpi(opts.action, 'init')
             pkg.query = '';
             return;
         else
@@ -758,7 +763,12 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         elseif strcmpi(curArg, 'InstallDir') || strcmpi(curArg, '-d')
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.installdir = nextArg;
-            usedNextArg = true;        
+            usedNextArg = true;
+        elseif strcmpi(curArg, 'Collection') || strcmpi(curArg, '-c')
+            nextArg = getNextArg(remainingArgs, ii, curArg);
+            opts.collection = nextArg;
+            pkg.collection = nextArg;
+            usedNextArg = true;
         elseif strcmpi(curArg, 'InternalDir') || strcmpi(curArg, '-n')
             nextArg = getNextArg(remainingArgs, ii, curArg);
             pkg.internaldir = nextArg;
@@ -788,6 +798,13 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         else
             error(['Did not recognize argument ''' curArg '''.']);
         end
+    end
+    
+    % update metadir, if collection was set
+    if ~strcmpi(opts.collection, 'default')
+        opts.metadir = fullfile(opts.metadir, 'mpm-collections', ...
+            opts.collection);
+        opts.installdir = opts.metadir;
     end
 end
 
@@ -866,7 +883,7 @@ function readRequirementsFile(fnm, opts)
     
     % build list of commands to run
     % and check for illegal params (note spaces)
-    illegalParams = {' -i ', ' infile ', ' installdir '};
+    illegalParams = {' -i ', ' infile ', ' installdir ', ' -c '};
     cmds = {};    
     for ii = 1:numel(lines)
         line = lines{ii};
@@ -875,7 +892,7 @@ function readRequirementsFile(fnm, opts)
                 error(['Line ' num2str(ii) ...
                     ' in infile cannot contain ''' illegalParams{jj} ...
                     '''. (Illegal arguments: ''-i'',' ...
-                    '''infile'',  ''installdir''.)']);
+                    '''infile'',  ''installdir'', ''-c''.)']);
             end
         end
         
@@ -899,7 +916,7 @@ function readRequirementsFile(fnm, opts)
         
         % now append opts as globals for each line in file
         if ~isempty(line)
-            cmd = [line ' -d ' opts.installdir];
+            cmd = [line ' -d ' opts.installdir ' -c ' opts.collection];
             if opts.force
                 cmd = [cmd ' --force'];
             end
