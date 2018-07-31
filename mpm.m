@@ -226,7 +226,7 @@ function [pkg, opts] = setDefaultOpts()
     
     opts = mpm_config(); % load default opts from config file
     opts.installdir = opts.DEFAULT_INSTALL_DIR;
-%     opts.update_mpm_paths = false; % set in mpm_config
+    opts.update_mpm_paths = false; % set in mpm_config
     opts.searchgithubfirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
     opts.update_all_paths = false;
     opts.local_install = false;
