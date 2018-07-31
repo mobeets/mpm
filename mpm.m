@@ -1,17 +1,40 @@
 function mpm(action, varargin)
-% function mpm(action, varargin)
+%MPM Matlab Package Manager
+% function mpm(ACTION, varargin)
 % 
-% positional arguments:
-%   action [required]:
-%       - init: add all installed packages in default install directory to
+% ACTION can be any of the following:
+%   'init'      add all installed packages in default install directory to
 %       path
-%       - install: installs a package by name
-%       - uninstall: installs a package by name
-%       - search: finds a url for a package by name
-%                 (searches Github and File Exchange)
-%       - freeze: list all installed packages (optional: in installdir)
-%   name [optional]: name of package (e.g., 'matlab2tikz')
+%   'search'    finds a url for a package by name (searches Github and File Exchange)
+%   'install'   installs a package by name
+%   'uninstall' installs a package by name
+%   'freeze'    list all installed packages (optional: in installdir)
+%
+% If ACTION is one of 'search', 'install', or 'uninstall', then you must
+% provide a package NAME as the next argument (e.g., 'matlab2tikz')
+%
+%
+% Examples:
+%
+%   % Search for a package called 'test' on Matlab File Exchange
+%   mpm search test
 % 
+%   % Install a package called 'test'
+%   mpm install test
+% 
+%   % Uninstall a package called 'test'
+%   mpm uninstall test
+%
+%   % List all installed packages
+%   mpm freeze
+%
+%   % Add all installed packages to the path (e.g., run this at startup)
+%   mpm init
+%
+%
+% To modify the default behavior of the above commands,
+% the following optional arguments are available: 
+%
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
 %   infile (-i): if set, will run mpm on all packages listed in file
@@ -28,6 +51,13 @@ function mpm(action, varargin)
 %   --allpaths: add path to all subfolders in package
 %   --local: url is a path to a local directory to install (-e to not copy)
 % 
+% For more help, or to report an issue, see <a href="matlab: 
+% web('https://github.com/mobeets/mpm')">the mpm Github page</a>.
+%
+    if nargin < 1
+        run('help(''mpm'')');
+        return;
+    end
     
     % parse and validate command line args
     [pkg, opts] = setDefaultOpts();
