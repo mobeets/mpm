@@ -480,7 +480,7 @@ function [isOk, pkg] = unzipFromUrl(pkg)
         zipfnm = websave(zipfnm, pkg.url);
     catch ME
         % handle 404 from File Exchange for getting updated download url
-        ps = strsplit(ME.message, 'for URL, ');
+        ps = strsplit(ME.message, 'for URL');
         if numel(ps) < 2
             isOk = false; return;
         end
