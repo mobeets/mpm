@@ -9,6 +9,7 @@ function mpm(action, varargin)
 %   'install'   installs a package by name
 %   'uninstall' installs a package by name
 %   'freeze'    list all installed packages (optional: in installdir)
+%   'set'       change options for an already installed package
 %
 % If ACTION is one of 'search', 'install', or 'uninstall', then you must
 % provide a package NAME as the next argument (e.g., 'matlab2tikz')
@@ -30,7 +31,9 @@ function mpm(action, varargin)
 %
 %   % Add all installed packages to the path (e.g., run this at startup)
 %   mpm init
-%
+%   
+%   % Change the folder added to the path in an already installed package
+%   mpm set test -n folder_name_to_add
 %
 % To modify the default behavior of the above commands,
 % the following optional arguments are available: 
@@ -205,19 +208,57 @@ function changePackageOptions(pkg, opts)
     pkgs = opts.metadata.packages;
     [~, ix] = indexInMetadata(pkg, pkgs);
     if ~any(ix)
-        disp(['   No previous versions of ''' pkg.name ...
+        warning(['   No previous versions of ''' pkg.name ...
             ''' installed by mpm were found.']);
         return;
     end
     assert(sum(ix) == 1, ...
         'internal error: multiple packages found by name');
-    pkg = pkgs(ix);
+    old_pkg = pkgs(ix);
     
     % update options
-    
+    if opts.nopaths
+        disp(['Updating "' pkg.name '" so that no paths will be added.']);
+        old_pkg.addpath = false;
+    end
+    if pkg.add_all_dirs_to_path
+        disp(['Updating "' pkg.name ...
+            '" so that all internal directories will be added to the path.']);
+        old_pkg.add_all_dirs_to_path = true;
+        if ~old_pkg.addpath
+            disp(['Paths were previously not being added for this' ...
+                ' package. Now they will be.']);
+            old_pkg.addpath = true;
+        end
+    end
+    if ~isempty(pkg.internaldir)        
+        if exist(fullfile(old_pkg.installdir, pkg.internaldir), 'dir')
+            old_pkg.mdir = pkg.internaldir;
+            old_pkg.internaldir = pkg.internaldir;
+            disp(['Updating "' pkg.name ...
+                '" so that the internal directory "' pkg.internaldir ...
+                '" will be added to the path.']);
+            if ~old_pkg.addpath
+                disp(['Paths were previously not being added for this' ...
+                    ' package. Now they will be.']);
+                old_pkg.addpath = true;
+            end
+        else
+            fldrs = dir(old_pkg.installdir);
+            fldrs = {fldrs([fldrs.isdir] == 1).name};
+            if numel(fldrs) == 0
+                warning(['Ignoring internaldir because ' ...
+                    'there are no internal folders to add']);
+            else
+                warning(['Ignoring internaldir because ' ...
+                    'it did not exist in package. Valid options are:']);
+                disp(fldrs);
+            end
+        end
+    end
     
     % write new metadata to file
-    pkgs(ix) = pkg;
+    pkgs(ix) = old_pkg;
     packages = pkgs;
     if ~opts.debug        
         save(opts.metafile, 'packages');
@@ -575,9 +616,18 @@ function mdir = findMDirOfPackage(pkg)
                 return;
             end
         end
-    end
-    warning(['Could not find folder with .m files. ' ...
-        'May need to manually add files to path.']);
+    end    
+    warning(['Could not find folder with .m files, ' ...
+        'so nothing will be added to the path.']);
+    disp(sprintf([...
+        'You can manually specify which folder to add to ' ...
+        'the path by running: \n' ...
+        '   >> mpm set ' pkg.name ' -n [foldername]\n' ...
+        'The following are internal folder names that ' ...
+        'you can add with this command: ']));
+    fldrs = dir(pkg.installdir);
+    foldernames = {fldrs([fldrs.isdir] == 1).name};
+    foldernames
     mdir = '';
 end
 
