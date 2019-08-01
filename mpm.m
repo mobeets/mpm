@@ -96,6 +96,12 @@ function mpm(action, varargin)
         return;
     end
     
+    % mpm set
+    if strcmpi(opts.action, 'set')
+        changePackageOptions(pkg, opts);
+        return;
+    end
+    
     % mpm uninstall
     if strcmpi(opts.action, 'uninstall')
         removePackage(pkg, opts);
@@ -192,6 +198,30 @@ function removePackage(pkg, opts)
     end
     
     disp('Uninstallation complete.');
+end
+
+function changePackageOptions(pkg, opts)
+    % find existing package
+    pkgs = opts.metadata.packages;
+    [~, ix] = indexInMetadata(pkg, pkgs);
+    if ~any(ix)
+        disp(['   No previous versions of ''' pkg.name ...
+            ''' installed by mpm were found.']);
+        return;
+    end
+    assert(sum(ix) == 1, ...
+        'internal error: multiple packages found by name');
+    pkg = pkgs(ix);
+    
+    % update options
+    
+    
+    % write new metadata to file
+    pkgs(ix) = pkg;
+    packages = pkgs;
+    if ~opts.debug        
+        save(opts.metafile, 'packages');
+    end
 end
 
 function listPackages(opts)
@@ -704,7 +734,8 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
 
     % init matlab's input parser and read action
     q = inputParser;
-    validActions = {'install', 'search', 'uninstall', 'init', 'freeze'};
+    validActions = {'install', 'search', 'uninstall', 'init', ...
+        'freeze', 'set'};
     checkAction = @(x) any(validatestring(x, validActions));
     addRequired(q, 'action', checkAction);
     defaultName = '';
@@ -869,6 +900,17 @@ function isOk = validateArgs(pkg, opts)
             'Cannot specify release_tag when running ''freeze''');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst when running ''freeze''');
+    end
+    if strcmpi(opts.action, 'set')
+        assert(~opts.force, 'Nothing to force when running ''set''.');
+        assert(isempty(pkg.url), ...
+            'Cannot specify url when running ''set''');
+        assert(isempty(pkg.query), ...
+            'Cannot specify query when running ''set''');
+        assert(isempty(pkg.release_tag), ...
+            'Cannot specify release_tag when running ''set''');
+        assert(~opts.searchgithubfirst, ...
+            'Cannot set searchgithubfirst when running ''set''');
     end
     if opts.local_install
         assert(~isempty(pkg.url), ...
