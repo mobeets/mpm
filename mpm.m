@@ -306,9 +306,10 @@ function [pkg, opts] = setDefaultOpts()
     opts.metadir = opts.DEFAULT_INSTALL_DIR;
     opts.searchgithubfirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
     opts.update_mpm_paths = false;    
-    opts.update_all_paths = false;
+    opts.update_all_paths = false;    
     opts.local_install = false;
     opts.local_install_uselocal = false;
+    opts.add_all_dirs_to_path = false;
     
     opts.infile = '';    
     opts.force = false;
@@ -870,6 +871,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
             opts.nopaths = true;
         elseif strcmpi(curArg, '--allpaths')
             pkg.add_all_dirs_to_path = true;
+            opts.add_all_dirs_to_path = true;
         elseif strcmpi(curArg, '--local')
             opts.local_install = true;
             pkg.local_install = true;
@@ -999,7 +1001,7 @@ function readRequirementsFile(fnm, opts)
         if opts.nopaths && ~isempty(strfind(line, ' --nopaths'))
             error('Cannot set --nopaths because it is in infile.');
         end
-        if opts.allpaths && ~isempty(strfind(line, ' --allpaths'))
+        if opts.add_all_dirs_to_path && ~isempty(strfind(line, ' --allpaths'))
             error('Cannot set --allpaths because it is in infile.');
         end
         if opts.local_install && ~isempty(strfind(line, ' --local'))
@@ -1018,7 +1020,7 @@ function readRequirementsFile(fnm, opts)
             if opts.nopaths
                 cmd = [cmd ' --nopaths'];
             end
-            if opts.allpaths
+            if opts.add_all_dirs_to_path
                 cmd = [cmd ' --allpaths'];
             end
             if opts.local_install
