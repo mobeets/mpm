@@ -534,7 +534,12 @@ end
 function isOk = checkoutFromUrl(pkg)
 % git checkout from url to installdir
     isOk = true;
-    flag = system(['git clone ', pkg.url, ' "', pkg.installdir, '"']);
+    if ~isempty(pkg.release_tag)
+        branch = pkg.release_tag
+    else
+        branch = 'master'
+    end
+    flag = system(['git clone --quiet -c advice.detachedHead=false --depth 1 --branch ', branch, ' ', pkg.url, ' "', pkg.installdir, '"']);
     
     if (flag ~= 0)
         isOk = false;
