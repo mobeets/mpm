@@ -539,7 +539,7 @@ function isOk = checkoutFromUrl(pkg)
     else
         branch = 'master'
     end
-    flag = system(['git clone --quiet -c advice.detachedHead=false --depth 1 --branch ', branch, ' ', pkg.url, ' "', pkg.installdir, '"']);
+    flag = system(['git clone -c advice.detachedHead=false --depth 1 --branch ', branch, ' ', pkg.url, ' "', pkg.installdir, '"']);
     
     if (flag ~= 0)
         isOk = false;
