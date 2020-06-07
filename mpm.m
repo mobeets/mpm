@@ -310,6 +310,7 @@ function [pkg, opts] = setDefaultOpts()
     opts.local_install = false;
     opts.local_install_uselocal = false;
     opts.add_all_dirs_to_path = false;
+    opts.installdir_override = false; % true if user sets using -d
     
     opts.infile = '';    
     opts.force = false;
@@ -854,6 +855,7 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
         elseif strcmpi(curArg, 'InstallDir') || strcmpi(curArg, '-d')
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.installdir = nextArg;
+            opts.installdir_override = true;
             usedNextArg = true;
         elseif strcmpi(curArg, 'Collection') || strcmpi(curArg, '-c')
             nextArg = getNextArg(remainingArgs, ii, curArg);
@@ -989,10 +991,12 @@ function readRequirementsFile(fnm, opts)
     
     % build list of commands to run
     % and check for illegal params (note spaces)
-    illegalParams = {' -i ', ' infile ', ' installdir ', ' -c '};
+    illegalParams = {' -i ', ' infile '};
     cmds = {};    
     for ii = 1:numel(lines)
         line = lines{ii};
+        cmd = line;
+        
         for jj = 1:numel(illegalParams)
             if ~isempty(strfind(line, illegalParams{jj}))
                 error(['Line ' num2str(ii) ...
@@ -1020,9 +1024,32 @@ function readRequirementsFile(fnm, opts)
             error('Cannot set -e because it is in infile.');
         end
         
+        % check if installdir set on line
+        if ~isempty(strfind(line, ' -d')) ...
+                || ~isempty(strfind(line, ' InstallDir '))
+            % warn if user also provided this line globally
+            if opts.installdir_override
+                warning([' install dir (-d) is set inside file (line ' ...
+                    num2str(ii) '), over-riding default.']);
+            end
+        elseif ~isempty(line)
+            cmd = [cmd ' -d ' opts.installdir];
+        end
+        
+        % check if collection set on line
+        if ~isempty(strfind(line, ' -c')) ...
+                || ~isempty(strfind(line, ' Collection '))
+            % warn if user also provided this line globally
+            if ~strcmpi(opts.collection, 'default')
+                warning([' collection (-c) is set inside file (line ' ...
+                    num2str(ii) '), over-riding default.']);
+            end
+        elseif ~isempty(line)
+            cmd = [cmd ' -c ' opts.collection];
+        end
+        
         % now append opts as globals for each line in file
         if ~isempty(line)
-            cmd = [line ' -d ' opts.installdir ' -c ' opts.collection];
             if opts.force
                 cmd = [cmd ' --force'];
             end
