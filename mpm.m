@@ -318,19 +318,24 @@ function [pkg, opts] = setDefaultOpts()
     opts.collection = pkg.collection;    
 end
 
-function url = handleCustomUrl(url)
+function url = handleCustomUrl(url, release_tag)
     
     % if .git url, must remove and add /zipball/master
     inds = strfind(url, '.git');
     if isempty(inds)
         inds = strfind(url, '?download=true');
         if isempty(inds)
-            url = [url '?download=true'];            
+           url = [url '?download=true'];
         end
         return;
     end
     ind = inds(end);
-    url = [url(1:ind-1) '/zipball/master' url(ind+4:end)];
+    if ~isempty(release_tag)
+        release = ['/zipball/', release_tag];
+    else
+        release = '/zipball/master';
+    end
+    url = [url(1:ind-1) release url(ind+4:end)];
     
 end
 
@@ -471,7 +476,7 @@ function [pkg, isOk] = installPackage(pkg, opts)
         end
     elseif ~opts.local_install
         % download zip
-        pkg.url = handleCustomUrl(pkg.url);
+        pkg.url = handleCustomUrl(pkg.url, pkg.release_tag);
         [isOk, pkg] = unzipFromUrl(pkg);
         if ~isOk && ~isempty(strfind(pkg.url, 'github.com')) && ...
             isempty(strfind(pkg.url, '.git'))
@@ -534,8 +539,11 @@ end
 function isOk = checkoutFromUrl(pkg)
 % git checkout from url to installdir
     isOk = true;
-    flag = system(['git clone ', pkg.url, ' "', pkg.installdir, '"']);
-    
+    if ~isempty(pkg.release_tag)
+        flag = system(['git clone --depth 1 --branch ', pkg.release_tag, ' ', pkg.url, ' "', pkg.installdir, '"']);
+    else
+        flag = system(['git clone --depth 1 ', pkg.url, ' "', pkg.installdir, '"']);
+    end
     if (flag ~= 0)
         isOk = false;
         warning(['git clone of URL ', pkg.url, ' failed.' ...
