@@ -51,6 +51,7 @@ function mpm(action, varargin)
 % arguments that are true if passed (otherwise they are false):
 %   --githubfirst (-g): check github for url before matlab fileexchange
 %   --force (-f): install package even if name already exists in InstallDir
+%   --approve: when using -i, auto-approve the installation without confirming
 %   --debug: do not install anything or update paths; just pretend
 %   --nopaths: no paths are added after installing (default if -c is specified)
 %   --allpaths: add path to all subfolders in package
@@ -314,6 +315,7 @@ function [pkg, opts] = setDefaultOpts()
     
     opts.infile = '';    
     opts.force = false;
+    opts.approve = false;
     opts.debug = false;
     opts.nopaths = false;
     opts.collection = pkg.collection;    
@@ -808,7 +810,8 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
     allParams = {'url', 'infile', 'installdir', 'internaldir', ...
         'release_tag', '--githubfirst', '--force', ...
         '--nopaths', '--allpaths', '--local', '-e', 'collection', '-c', ...
-        '-u', '-q', '-i', '-d', '-n', '-t', '-g', '-f', '--debug'};
+        '-u', '-q', '-i', '-d', '-n', '-t', '-g', '-f', '--debug', ...
+        '--approve'};
     
     % no additional args
     if numel(remainingArgs) == 0
@@ -875,6 +878,8 @@ function [pkg, opts] = parseArgs(pkg, opts, action, varargin)
             opts.searchgithubfirst = true;
         elseif strcmpi(curArg, '--force') || strcmpi(curArg, '-f')
             opts.force = true;
+        elseif strcmpi(curArg, '--approve')
+            opts.approve = true;
         elseif strcmpi(curArg, '--debug')
             opts.debug = true;
         elseif strcmpi(curArg, '--nopaths')
@@ -935,6 +940,9 @@ function isOk = validateArgs(pkg, opts)
             'Cannot specify release_tag if installing from filename');
         assert(~opts.searchgithubfirst, ...
             'Cannot set searchgithubfirst if installing from filename');
+    else
+        assert(~opts.approve, ...
+            'Can only set approve if installing from filename');
     end
     if strcmpi(opts.action, 'uninstall')
         assert(isempty(pkg.url), ...
@@ -1074,13 +1082,15 @@ function readRequirementsFile(fnm, opts)
     for ii = 1:numel(cmds)
         disp(['   mpm ' opts.action ' ' cmds{ii}]);
     end
-    reply = input('Confirm (y/n)? ', 's');
-    if isempty(reply)
-        reply = 'y';
-    end
-    if ~strcmpi(reply(1), 'y')
-        disp('I saw nothing.');
-        return;
+    if ~opts.approve % otherwise, auto-approve the below
+        reply = input('Confirm (y/n)? ', 's');
+        if isempty(reply)
+            reply = 'y';
+        end
+        if ~strcmpi(reply(1), 'y')
+            disp('I saw nothing.');
+            return;
+        end
     end
     
     % run all
