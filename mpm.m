@@ -460,16 +460,23 @@ function [pkg, isOk] = installPackage(pkg, opts)
         rmdir(pkg.installdir, 's');
     end
     
-    if ~opts.local_install
+    if ~opts.local_install && ~isempty(strfind(pkg.url, '.git')) && ...
+            isempty(strfind(pkg.url, 'github.com'))
+        % install with git clone because not on github
+        isOk = checkoutFromUrl(pkg);
+        if ~isOk
+            warning('Error using git clone');
+        end
+    elseif ~opts.local_install
         % download zip
         pkg.url = handleCustomUrl(pkg.url, pkg.release_tag);
         [isOk, pkg] = unzipFromUrl(pkg);
-        if ~isOk
-            % git clone
-            isOk = checkoutFromUrl(pkg);
-            if ~isOk
-                warning('Error downloading ', pkg.url);
-            end
+        if ~isOk && ~isempty(strfind(pkg.url, 'github.com')) && ...
+            isempty(strfind(pkg.url, '.git'))
+            warning(['If you were trying to install a github repo, ', ...
+                'try adding ".git" to the end.']);
+        elseif ~isOk
+            warning('Error downloading zip.');
         end
     else % local install (using pre-existing local directory)
         % make sure path exists
