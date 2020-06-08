@@ -61,7 +61,7 @@ __Search without installing:__
 __Install from a url:__
 
 ```
->> mpm install export_fig -u http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
+>> mpm install covidx -u https://www.mathworks.com/matlabcentral/fileexchange/76213-covidx
 ```
 OR:
 
@@ -118,6 +118,8 @@ Using collection "test"
 Specifying a requirements file lets you install or search for multiple packages at once. See 'requirements-example.txt' for an example. Make sure to provide an absolute path to the file!
 
 By default, mpm tries to find the best folder in the package to add to your Matlab path. To install a package without modifying any paths, set `--nopaths`. Or to add _all_ subfolders in a package to the path, set `--allpaths`.
+
+To automatically confirm installation without being prompted, set `--approve`. Note that this is only available when installing packages from file.
 
 ## What it does
 

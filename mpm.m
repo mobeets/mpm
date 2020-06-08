@@ -407,7 +407,6 @@ function url = findUrlOnGithub(pkg)
     if isempty(query)
         query = pkg.name;
     end
-    
     % query github for matlab repositories
     % https://developer.github.com/v3/search/#search-repositories
     % ' ' will be replaced by '+', which seems necessary
@@ -418,22 +417,12 @@ function url = findUrlOnGithub(pkg)
     if isempty(html) || ~isfield(html, 'items') || isempty(html.items)
         return;
     end
-
     % take first repo
     item = html.items(1);
     
     if ~isempty(pkg.release_tag)
         % if release tag set, return the release matching this tag
-        res = webread(item.tags_url);
-        if isempty(res) || ~isfield(res, 'zipball_url')
-            return;
-        end
-        ix = strcmpi({res.name}, pkg.release_tag);
-        if sum(ix) == 0
-            return;
-        end
-        ind = find(ix, 1, 'first');
-        url = res(ind).zipball_url;
+        url = [item.url '/zipball/' pkg.release_tag];
     else
         rel_url = [item.url '/releases/latest'];
         try
