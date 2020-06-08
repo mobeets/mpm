@@ -1,3 +1,3 @@
-export_fig -u http://www.mathworks.com/matlabcentral/fileexchange/23629-export-fig
+export_fig -u https://github.com/altmany/export_fig.git
 matlab2tikz -t 1.0.0
 colorbrewer
