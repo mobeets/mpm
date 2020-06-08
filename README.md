@@ -117,8 +117,6 @@ Using collection "test"
 
 Specifying a requirements file lets you install or search for multiple packages at once. See 'requirements-example.txt' for an example. Make sure to provide an absolute path to the file!
 
-By default, mpm tries to find the best folder in the package to add to your Matlab path. To install a package without modifying any paths, set `--nopaths`. Or to add _all_ subfolders in a package to the path, set `--allpaths`.
-
 To automatically confirm installation without being prompted, set `--approve`. Note that this is only available when installing packages from file.
 
 ## What it does
@@ -129,6 +127,6 @@ If you restart Matlab, you'll want to run `mpm init` to re-add all the folders i
 
 ## Troubleshooting
 
-Because there's no standard directory structure for a Matlab package, automatically adding paths can get a bit messy. When mpm downloads a package, it adds a single folder within that package to your Matlab path. If there are no `*.m` files in the package's base directory, it looks in folders called 'bin', 'src', 'lib', or 'code' instead. You can specify the name of an internal directory by passing in an `-n` or `internaldir` argument.
+Because there's no standard directory structure for a Matlab package, automatically adding paths can get a bit messy. When mpm downloads a package, it adds a single folder within that package to your Matlab path. If there are no `*.m` files in the package's base directory, it looks in folders called 'bin', 'src', 'lib', or 'code' instead. You can specify the name of an internal directory by passing in an `-n` or `internaldir` argument. To install a package without modifying any paths, set `--nopaths`. Or to add _all_ subfolders in a package to the path, set `--allpaths`.
 
 Mpm keeps track of the packages it's downloaded in a file called `mpm.mat`, within each installation directory.
