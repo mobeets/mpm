@@ -407,6 +407,7 @@ function url = findUrlOnGithub(pkg)
     if isempty(query)
         query = pkg.name;
     end
+
     % query github for matlab repositories
     % https://developer.github.com/v3/search/#search-repositories
     % ' ' will be replaced by '+', which seems necessary
@@ -417,6 +418,7 @@ function url = findUrlOnGithub(pkg)
     if isempty(html) || ~isfield(html, 'items') || isempty(html.items)
         return;
     end
+
     % take first repo
     item = html.items(1);
     
