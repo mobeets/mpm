@@ -6,7 +6,7 @@ addpath(mpm_dir)
 
 
 %
-% Test Install using GitHub api (no url)
+% Test Install - using GitHub api (no url)
 %
 
 %% Test install of latest release
@@ -35,7 +35,7 @@ assert(~isempty(which('matlab2tikz')))
 
 
 %
-% Test Install using URL with .git file extension
+% Test Install - using URL with .git file extension
 %
 
 %% Test install of default branch (master)
@@ -64,7 +64,7 @@ assert(~isempty(which('matlab2tikz')))
 
 
 %
-% Test Install using MathWorks FileExchange
+% Test Install - using MathWorks FileExchange
 %
 
 %% Test download directly from fileexchange
