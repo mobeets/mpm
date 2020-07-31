@@ -996,6 +996,15 @@ function readRequirementsFile(fnm, opts)
         line = lines{ii};
         cmd = line;
         
+        if isempty(strrep(cmd, ' ', ''))
+            % ignore empty line
+            continue;
+        end
+        if strcmpi(cmd(1), '%')
+            % ignore comments
+            continue;
+        end
+        
         for jj = 1:numel(illegalParams)
             if ~isempty(strfind(line, illegalParams{jj}))
                 error(['Line ' num2str(ii) ...
