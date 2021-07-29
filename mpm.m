@@ -379,13 +379,23 @@ function url = findUrlOnFileExchange(pkg)
     html = webread(base_url, 'term', query);
     
     % extract all hrefs from '<a href="*" class="results_title">'
-    expr = 'class="results_title"[^>]*href="([^"]*)"[^>]*|href="([^"]*)"[^>]*class="results_title"';
+%     expr = 'class="results_title"[^>]*href="([^"]*)"[^>]*|href="([^"]*)"[^>]*class="results_title"';
+    expr = '<h3>[^<]*<a href="/matlabcentral/fileexchange/([^"]*)">([^"]*)</a>';
     tokens = regexp(html, expr, 'tokens');
+    
+    % if any packages contain package name exactly, return that one
+    for ii = 1:numel(tokens) 
+        curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
+        if ~isempty(strfind(curName, lower(query)))
+            url = [base_url tokens{ii}{1} '&download=true'];
+            return;
+        end
+    end
     
     % return first result
     if ~isempty(tokens)
         url = tokens{1}{1};
-        url = [url '?download=true'];
+        url = [base_url url '&download=true'];
 %         url_format = @(aid, ver) ['https://www.mathworks.com/' ...
 %             'matlabcentral/mlc-downloads/downloads/submissions/' aid ...
 %             '/versions/' version '/download/zip'];
