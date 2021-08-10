@@ -1,7 +1,7 @@
 function mpm(action, varargin)
 %MPM Matlab Package Manager
 % function mpm(ACTION, varargin)
-% 
+%
 % ACTION can be any of the following:
 %   'init'      add all installed packages in default install directory to path
 %   'search'    finds a url for a package by name (searches Github and File Exchange)
@@ -21,21 +21,21 @@ function mpm(action, varargin)
 %
 %   % Search for a package called 'test' on Matlab File Exchange
 %   mpm search test
-% 
+%
 %   % Install a package called 'test'
 %   mpm install test
-% 
+%
 %   % Uninstall a package called 'test'
 %   mpm uninstall test
 %
 %   % List all installed packages
 %   mpm freeze
-%   
+%
 %   % Change the folder added to the path in an already installed package
 %   mpm set test -n folder_name_to_add
 %
 % To modify the default behavior of the above commands,
-% the following optional arguments are available: 
+% the following optional arguments are available:
 %
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
@@ -56,8 +56,8 @@ function mpm(action, varargin)
 %   --all-paths: add path to all subfolders in package
 %   --local: url is a path to a local directory to install (add '-e' to not copy)
 %   --use-local (-e): skip copy operation during local install
-% 
-% For more help, or to report an issue, see <a href="matlab: 
+%
+% For more help, or to report an issue, see <a href="matlab:
 % web('https://github.com/mobeets/mpm')">the mpm Github page</a>.
 %
 
@@ -80,7 +80,7 @@ function mpm(action, varargin)
     if ~isempty(opts.inFile)
         % read filename, and call mpm for all lines in this file
         readRequirementsFile(opts.inFile, opts);
-        return;        
+        return;
     end
 
     % load metadata
@@ -115,7 +115,7 @@ function mpm(action, varargin)
     findAndSetupPackage(package, opts);
 end
 
-function success = findAndSetupPackage(package, opts)    
+function success = findAndSetupPackage(package, opts)
     success = true;
     package.installDir = fullfile(opts.installDir, package.name);
     disp(i18n('setup_start', package.name));
@@ -129,7 +129,7 @@ function success = findAndSetupPackage(package, opts)
         warning(i18n('package_collision'));
         success = false;
         return;
-    end    
+    end
 
     % find url if not set
     if isempty(package.url)
@@ -195,7 +195,7 @@ function removePackage(package, opts)
 
     % write new metadata to file
     packages = packages(~ix);
-    if ~opts.debug        
+    if ~opts.debug
         save(opts.metafile, 'packages');
     end
 
@@ -238,7 +238,7 @@ function changePackageOptions(package, opts)
             oldPackage.addPath = true;
         end
     end
-    if ~isempty(package.internalDir)        
+    if ~isempty(package.internalDir)
         if exist(fullfile(oldPackage.installDir, package.internalDir), 'dir')
             oldPackage.mdir = package.internalDir;
             oldPackage.internalDir = package.internalDir;
@@ -260,7 +260,7 @@ function changePackageOptions(package, opts)
     % write new metadata to file
     packageMetadata(ix) = oldPackage;
     packages = packageMetadata;
-    if ~opts.debug        
+    if ~opts.debug
         save(opts.metafile, 'packages');
     end
 end
@@ -288,7 +288,7 @@ function listPackages(opts)
 end
 
 function [package, opts] = setDefaultOpts()
-% load opts from config file, and then set additional defaults    
+% load opts from config file, and then set additional defaults
 
     % empty package
     package.name = '';
@@ -305,19 +305,19 @@ function [package, opts] = setDefaultOpts()
     opts.installDir = opts.DEFAULT_INSTALL_DIR;
     opts.metadir = opts.DEFAULT_INSTALL_DIR;
     opts.searchGithubFirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
-    opts.updateMpmPaths = false;    
-    opts.updateAllPaths = false;    
+    opts.updateMpmPaths = false;
+    opts.updateAllPaths = false;
     opts.localInstall = false;
     opts.localInstallUseLocal = false;
     opts.addAllDirsToPath = false;
     opts.installDirOverride = false; % true if user sets using -d
 
-    opts.inFile = '';    
+    opts.inFile = '';
     opts.force = false;
     opts.approve = false;
     opts.debug = false;
     opts.noPaths = false;
-    opts.collection = package.collection;    
+    opts.collection = package.collection;
 end
 
 function url = handleCustomUrl(url, releaseTag)
@@ -467,7 +467,7 @@ function url = findUrlOnGithub(package)
 end
 
 function [package, isOk] = installPackage(package, opts)
-% install package by downloading url, unzipping, and finding paths to add    
+% install package by downloading url, unzipping, and finding paths to add
 
     if opts.debug
         isOk = false;
@@ -603,7 +603,7 @@ function [isOk, package] = unzipFromUrl(package)
         || ((numFolderNames == 4) && (ndirs == 3) ...
         && strcmpi(folderNames(~[folderNames.isdir]).name, 'license.txt'))
         % only folders are '.', '..', and package folder (call it dirName)
-        %       and then maybe a license file, 
+        %       and then maybe a license file,
         %       so copy the subtree of dirName and place inside installDir
         folderNames = folderNames([folderNames.isdir]);
         fldr = folderNames(end).name;
@@ -647,11 +647,11 @@ function mdir = findMDirOfPackage(package)
                 return;
             end
         end
-    end    
+    end
     warning(i18n('mdir_404'));
     disp(i18n('mdir_help', package.name));
     dispTree(package.installDir);
-    tree 
+    tree
     mdir = '';
 end
 
@@ -715,7 +715,7 @@ function opts = addToMetadata(package, opts)
     % write to file
     packages = packageMetadata;
     opts.metadata.packages = packages;
-    if ~opts.debug        
+    if ~opts.debug
         save(opts.metafile, 'packages');
     end
 end
@@ -782,7 +782,7 @@ end
 function c = updateAllPaths(opts, namesAlreadyAdded)
 % adds all directories inside installDir to path
 %   ignoring those already added
-% 
+%
     c = 0;
     fs = dir(opts.installDir); % get names of everything in install dir
     fs = {fs([fs.isdir]).name}; % keep directories only
@@ -790,7 +790,7 @@ function c = updateAllPaths(opts, namesAlreadyAdded)
     for ii = 1:numel(fs)
         f = fs{ii};
         if ~ismember(f, namesAlreadyAdded)
-            if ~opts.debug                
+            if ~opts.debug
                 dirPath = fullfile(opts.installDir, f);
                 disp(mpm_config('updatepath_op', dirPath));
                 addpath(dirPath);
@@ -802,7 +802,7 @@ end
 
 function [package, opts] = parseArgs(package, opts, action, varargin)
 % function p = parseArgs(action, varargin)
-% 
+%
 
     % init matlab's input parser and read action
     q = inputParser;
@@ -868,7 +868,7 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
         if usedNextArg
             usedNextArg = false;
             continue;
-        end        
+        end
         usedNextArg = false;
         if strcmpi(curArg, 'url') || strcmpi(curArg, '-u')
             nextArg = getNextArg(remainingArgs, ii, curArg);
@@ -1003,7 +1003,7 @@ function readRequirementsFile(fileName, opts)
     % build list of commands to run
     % and check for illegal params (note spaces)
     illegalParams = {' -i ', ' in-file '};
-    cmds = {};    
+    cmds = {};
     for ii = 1:numel(lines)
         line = lines{ii};
         cmd = line;
@@ -1205,7 +1205,7 @@ function str = i18n(key, varargin)
     else
         data = nls.en;
     end
-    
+
     if ~ischar(key)
         if (                                                                ...
             ~isfield(nls, locale)                                           ...
