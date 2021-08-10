@@ -1156,7 +1156,7 @@ end
 function str = i18n(key, varargin)
     persistent locale nls
     locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
-    load nls.mat nls;
+    load mpm_nls.mat nls;
 
     %% Check if message key exists.
     if isfield(nls, locale)
