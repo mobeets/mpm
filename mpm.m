@@ -3,8 +3,7 @@ function mpm(action, varargin)
 % function mpm(ACTION, varargin)
 % 
 % ACTION can be any of the following:
-%   'init'      add all installed packages in default install directory to
-%       path
+%   'init'      add all installed packages in default install directory to path
 %   'search'    finds a url for a package by name (searches Github and File Exchange)
 %   'install'   installs a package by name
 %   'uninstall' installs a package by name
@@ -17,6 +16,9 @@ function mpm(action, varargin)
 %
 % Examples:
 %
+%   % Add all installed packages to the path (e.g. to be run at startup)
+%   mpm init
+%
 %   % Search for a package called 'test' on Matlab File Exchange
 %   mpm search test
 % 
@@ -28,9 +30,6 @@ function mpm(action, varargin)
 %
 %   % List all installed packages
 %   mpm freeze
-%
-%   % Add all installed packages to the path (e.g., run this at startup)
-%   mpm init
 %   
 %   % Change the folder added to the path in an already installed package
 %   mpm set test -n folder_name_to_add
@@ -73,9 +72,9 @@ function mpm(action, varargin)
     [package, opts] = parseArgs(package, opts, action, varargin);
     validateArgs(package, opts);
     if opts.debug
-        warning('Debug mode. No packages will actually be installed, or added to metadata or paths.');
+        warning(i18n('debug_message'));
     end
-    disp(['Using collection ''' opts.collection '''.']);
+    disp(i18n('setup_log', opts.collection));
 
     % installing from requirements
     if ~isempty(opts.inFile)
@@ -119,11 +118,15 @@ end
 function success = findAndSetupPackage(package, opts)    
     success = true;
     package.installDir = fullfile(opts.installDir, package.name);
-    disp(['Collecting ''' package.name '''...']);
+    disp(i18n('setup_start', package.name));
 
     % check if exists
-    if ~opts.force && ~strcmpi(opts.action, 'search') && ~isempty(indexInMetadata(package, opts.metadata.packages))
-        warning('   Package already exists. Re-run with --force to overwrite.');
+    if (                                                                    ...
+        ~opts.force                                                         ...
+        && ~strcmpi(opts.action, 'search')                                  ...
+        && ~isempty(indexInMetadata(package, opts.metadata.packages))       ...
+    )
+        warning(i18n('package_collision'));
         success = false;
         return;
     end    
@@ -136,15 +139,15 @@ function success = findAndSetupPackage(package, opts)
     % download package and add to metadata
     if ~isempty(package.url) && strcmpi(opts.action, 'install')
         if ~opts.localInstall
-            disp(['   Downloading ' package.url '...']);
+            disp(i18n('setup_download', package.url));
         else
-            disp(['   Installing local package ' package.url '...']);
+            disp(i18n('setup_install'));
         end
         [package, isOk] = installPackage(package, opts);
         if ~isempty(package) && isOk
             opts = addToMetadata(package, opts);
             if ~opts.noPaths
-                disp('Updating paths...');
+                disp(i18n('setup_updating'));
                 updatePath(package, opts);
             end
         end
@@ -155,20 +158,20 @@ function removePackage(package, opts)
     packages = opts.metadata.packages;
     [~, ix] = indexInMetadata(package, packages);
     if ~any(ix)
-        disp(['   No previous versions of ''' package.name ''' installed by mpm were found.']);
+        disp(i18n('remove_404', package.name));
         return;
     end
 
     % delete package directories if they exist
     removalQueue = packages(ix);
-    disp(['   Removing ' num2str(sum(ix)) ' package(s) named ''' package.name '''.']);
+    disp(i18n('remove_start', num2str(sum(ix)), package.name));
     if ~opts.force
-        reply = input('   Confirm (y/n)? ', 's');
+        reply = input(i18n('confirm'), 's');
         if isempty(reply)
-            reply = 'y';
+            reply = i18n('confirm_yes');
         end
-        if ~strcmpi(reply(1), 'y')
-            disp('   Forget I asked.');
+        if ~strcmpi(reply(1), i18n('confirm_yes'))
+            disp(i18n('confirm_nvm'));
             return;
         end
     end
@@ -176,8 +179,8 @@ function removePackage(package, opts)
         package = removalQueue(ii);
 
         % check for uninstall file
-        pth = fullfile(package.installDir, package.mdir);
-        checkForFileAndRun(pth, 'uninstall.m', opts);
+        dirPath = fullfile(package.installDir, package.mdir);
+        checkForFileAndRun(dirPath, 'uninstall.m', opts);
 
         if exist(package.installDir, 'dir')
             % remove old directory
@@ -185,7 +188,7 @@ function removePackage(package, opts)
                 rmdir(package.installDir, 's');
             else
                 installDir = package.installDir;
-                disp(['Not removing directory because  it was pre-existing before install: ''' installDir '''']);
+                disp(i18n('remove_preexist', installDir));
             end
         end
     end
@@ -196,7 +199,19 @@ function removePackage(package, opts)
         save(opts.metafile, 'packages');
     end
 
-    disp('Uninstallation complete.');
+    disp();
+end
+
+function dispTree(name)
+    folderNames = dir(name);
+    folderNames = {folderNames([folderNames.isdir] == 1).name};
+    for i = 1:length(folderNames)
+        if i == length(folderNames)
+            disp([char(9492) char(9472) char(9472) char(9472) folderNames{i}])
+        elseif ~endsWith(folderNames{i}, '.')
+            disp([char(9500) char(9472) char(9472) char(9472) folderNames{i}])
+        end
+    end
 end
 
 function changePackageOptions(package, opts)
@@ -204,23 +219,22 @@ function changePackageOptions(package, opts)
     packageMetadata = opts.metadata.packages;
     [~, ix] = indexInMetadata(package, packageMetadata);
     if ~any(ix)
-        packageName = package.name;
-        warning(['   No previous versions of ''' packageName ''' installed by mpm were found.']);
+        warning(i18n('update_404', package.name));
         return;
     end
-    assert(sum(ix) == 1, 'internal error: multiple packages found by name');
+    assert(sum(ix) == 1, i18n('options_conflict'));
     oldPackage = packageMetadata(ix);
 
     % update options
-    if opts.nopaths
-        disp(['Updating ''' package.name ''' so that no paths will be added.']);
+    if opts.noPaths
+        disp(i18n('update_nopaths', package.name));
         oldPackage.addPath = false;
     end
     if package.addAllDirsToPath
-        disp(['Updating ''' package.name ''' so that all internal directories will be added to the path.']);
+        disp(i18n('update_pathdirs', package.name));
         oldPackage.addAllDirsToPath = true;
         if ~oldPackage.addPath
-            disp('Paths were previously not being added for this package. Now they will be.');
+            disp(i18n('update_addpath'));
             oldPackage.addPath = true;
         end
     end
@@ -228,19 +242,17 @@ function changePackageOptions(package, opts)
         if exist(fullfile(oldPackage.installDir, package.internalDir), 'dir')
             oldPackage.mdir = package.internalDir;
             oldPackage.internalDir = package.internalDir;
-            disp(['Updating ''' package.name ''' so that the internal directory ''' package.internalDir ''' will be added to the path.']);
+            disp(i18n('update_package', package.name, package.internalDir));
             if ~oldPackage.addPath
-                disp('Paths were previously not being added for this package. Now they will be.');
+                disp(i18n('update_addpath'));
                 oldPackage.addPath = true;
             end
         else
-            fldrs = dir(oldPackage.installDir);
-            fldrs = {fldrs([fldrs.isdir] == 1).name};
-            if numel(fldrs) == 0
-                warning('Ignoring internal-dir because there are no internal folders to add');
+            if numel(folderNames) == 0
+                warning(i18n('internal_no_dirs'));
             else
-                warning('Ignoring internal-dir because it did not exist in package. Valid options are:');
-                disp(fldrs);
+                warning(i18n('internal_nosuchdir'));
+                dispTree(oldPackage.installDir);
             end
         end
     end
@@ -256,20 +268,20 @@ end
 function listPackages(opts)
     packages = opts.metadata.packages;
     if isempty(packages)
-        disp(['No packages currently installed to ' opts.installDir]);
+        disp(i18n('list_404', opts.installDir));
         return;
     end
-    disp(['Packages currently installed to ' opts.installDir ':']);
+    disp(i18n('list_current', opts.installDir));
     for ii = 1:numel(packages)
         package = packages(ii);
         packageName = package.name;
         if ~isempty(package.releaseTag)
             packageName = [packageName '==' package.releaseTag]; %#ok<*AGROW>
         end
-        out = ['- ' packageName ' (' package.downloadDate ')'];
+        out = [' - ' packageName ' (' package.downloadDate ')'];
         cdir = fileparts(package.installDir);
         if ~strcmpi(cdir, opts.installDir)
-            out = [out ': ' package.installDir];
+            out = [out ' : ' package.installDir];
         end
         disp(out);
     end
@@ -347,9 +359,9 @@ function url = findUrl(package, opts)
         end
     end
     if isempty(url)
-        disp('   Could not find url.');
+        disp(i18n('url_404'));
     else
-        disp(['   Found url: ' url]);
+        disp(i18n('url_found', url));
     end
 end
 
@@ -450,12 +462,12 @@ function [package, isOk] = installPackage(package, opts)
 
     % check for previous package
     if exist(package.installDir, 'dir') && ~opts.force
-        warning(['   Could not install because folder already exists.', ' Try adding "-f" to force.']);
+        warning(i18n('install_conflict'));
         isOk = false;
         return;
     elseif exist(package.installDir, 'dir')
         % remove old directory
-        disp('   Removing previous version from disk.');
+        disp(i18n('install_remove_previous'));
         rmdir(package.installDir, 's');
     end
 
@@ -463,52 +475,52 @@ function [package, isOk] = installPackage(package, opts)
         % install with git clone because not on github
         isOk = checkoutFromUrl(package);
         if ~isOk
-            warning('Error using git clone');
+            warning(i18n('install_git_error'));
         end
     elseif ~opts.localInstall
         % download zip
         package.url = handleCustomUrl(package.url, package.releaseTag);
         [isOk, package] = unzipFromUrl(package);
         if ~isOk && ~isempty(strfind(package.url, 'github.com')) && isempty(strfind(package.url, '.git'))
-            warning('If you were trying to install a github repo, try adding ".git" to the end.');
+            warning(i18n('install_add_git_ext'));
         elseif ~isOk
-            warning('Error downloading zip.');
+            warning(i18n('install_download_error'));
         end
     else % local install (using pre-existing local directory)
         % make sure path exists
         if ~exist(package.url, 'dir')
-            warning(['Provided path to local directory does not exist: ''' package.url '''']);
+            warning(i18n('install_nosuchdir', package.url));
             isOk = false; return;
         end
 
         % copy directory to installDir
         if ~opts.localInstallUseLocal
             if ~exist(package.url, 'dir')
-                warning(['Could not find directory: ''' package.url '." Try providing absolute path.']);
+                warning(i18n('install_404', package.url));
                 isOk = false; return;
             end
             mkdir(package.installDir);
             isOk = copyfile(package.url, package.installDir);
             if ~isOk
-                warning('Error copying directory.');
+                warning(i18n('install_error_local'));
             end
         else % no copy; just track the provided path
             % make sure we have absolute path
             if ~isempty(strfind(package.url, pwd))
-                abspath = package.url;
+                absPath = package.url;
             else % try making it ourselves
-                abspath = fullfile(pwd, package.url);
+                absPath = fullfile(pwd, package.url);
             end
-            if ~exist(abspath, 'dir')
-                warning(['Could not find directory: ''' abspath '." Try providing absolute path.']);
+            if ~exist(absPath, 'dir')
+                warning(i18n('install_404', absPath));
                 isOk = false; return;
             else
-                package.installDir = abspath;
+                package.installDir = absPath;
             end
         end
     end
     if ~isOk
-        warning('   Could not install.');
+        warning(i18n('install_error', package.name));
         return;
     end
     package.downloadDate = datestr(datetime);
@@ -516,8 +528,8 @@ function [package, isOk] = installPackage(package, opts)
 
     if isOk
         % check for install.m and run after confirming
-        pth = fullfile(package.installDir, package.mdir);
-        checkForFileAndRun(pth, 'install.m', opts);
+        dirPath = fullfile(package.installDir, package.mdir);
+        checkForFileAndRun(dirPath, 'install.m', opts);
     end
 
 end
@@ -532,7 +544,7 @@ function isOk = checkoutFromUrl(package)
     end
     if (flag ~= 0)
         isOk = false;
-        warning(['git clone of URL ', package.url, ' failed. (Is ''git'' is installed on your system?)']);
+        warning(i18n('checkout_error', package.url));
     end
 end
 
@@ -569,8 +581,8 @@ function [isOk, package] = unzipFromUrl(package)
         % only folders are '.', '..', and package folder (call it dirName)
         %       and then maybe a license file, 
         %       so copy the subtree of dirName and place inside installDir
-        fldrs = folderNames([folderNames.isdir]);
-        fldr = fldrs(end).name;
+        folderNames = folderNames([folderNames.isdir]);
+        fldr = folderNames(end).name;
         dirName = fullfile(package.installDir, fldr);
         try
             movefile(fullfile(dirName, '*'), package.installDir);
@@ -593,7 +605,8 @@ function mdir = findMDirOfPackage(package)
             mdir = package.internalDir;
             return;
         else
-            warning('Ignoring internal-dir because it did not exist in package.');
+            warning(i18n('internal_nosuchdir'));
+            dispTree(package.installDir);
         end
     end
 
@@ -611,16 +624,10 @@ function mdir = findMDirOfPackage(package)
             end
         end
     end    
-    warning('Could not find folder with .m files. Nothing will be added to the path.');
-    fprintf([ ...
-        'You can manually specify which folder to add to ' ...
-        'the path by running: \n' ...
-        '   >> mpm set ' package.name ' -n [foldername]\n' ...
-        'The following are internal folder names that ' ...
-        'you can add with this command: \n']);
-    fldrs = dir(package.installDir);
-    foldernames = {fldrs([fldrs.isdir] == 1).name};
-    disp(foldernames);
+    warning(i18n('mdir_404'));
+    disp(i18n('mdir_help', package.name));
+    dispTree(package.installDir);
+    tree 
     mdir = '';
 end
 
@@ -651,8 +658,8 @@ function [m, metafile] = getMetadata(opts)
         end
 
         % handle manually-deleted packages by skipping if dir doesn't exist
-        pth = fullfile(package.installDir, package.mdir);
-        if exist(pth, 'dir')
+        dirPath = fullfile(package.installDir, package.mdir);
+        if exist(dirPath, 'dir')
             cleanPackages = [cleanPackages package];
         end
     end
@@ -675,10 +682,9 @@ function opts = addToMetadata(package, opts)
     [~, ix] = indexInMetadata(package, packageMetadata);
     if any(ix)
         packageMetadata = packageMetadata(~ix);
-        disp(['   Replacing previous version in metadata in  ' ...
-            opts.metafile]);
+        disp(i18n('metadata_replace_op', opts.metafile));
     else
-        disp(['   Adding package to metadata in ' opts.metafile]);
+        disp(i18n('metadata_add_op', opts.metafile));
     end
     packageMetadata = [packageMetadata package];
 
@@ -705,16 +711,15 @@ function updatePaths(opts)
         end
     end
     if numel(packages) == 0
-        disp('   No packages found in collection.');
+        disp(i18n('updatepaths_404'));
     else
-        disp(['   Added paths for ' num2str(numel(namesAdded)) ...
-            ' package(s).']);
+        disp(i18n('updatepaths_success', num2str(numel(packages))));
     end
 
     % also add all folders listed in install-dir (optional)
     if opts.updateAllPaths
         c = updateAllPaths(opts, namesAdded);
-        disp(['   Added paths for ' num2str(c) ' additional package(s).']);
+        disp(i18n('updatepaths_all', num2str(c)));
     end
 end
 
@@ -723,29 +728,29 @@ function success = updatePath(package, opts)
     if ~package.addPath
         return;
     end
-    pth = fullfile(package.installDir, package.mdir);
-    if exist(pth, 'dir')
+    dirPath = fullfile(package.installDir, package.mdir);
+    if exist(dirPath, 'dir')
         success = true;
         if ~opts.debug
-            disp(['   Adding to path: ' pth]);
-            addpath(pth);
+            disp(i18n('updatepath_op', dirPath));
+            addpath(dirPath);
         end
 
         % add all folders to path
         if package.addAllDirsToPath
-            disp('   Also adding paths to all sub-folders (--all-paths).');
-            addpath(genpath(pth));
+            disp(i18n('updatepath_all'));
+            addpath(genpath(dirPath));
 
         else % check for pathList.m file
-            pathfile = fullfile(pth, 'pathList.m');
-            pathsToAdd = checkForPathlistAndGenpath(pathfile, pth);
+            pathfile = fullfile(dirPath, 'pathList.m');
+            pathsToAdd = checkForPathlistAndGenpath(pathfile, dirPath);
             if numel(pathsToAdd) > 0 && ~opts.debug
-                disp('   Also adding paths found in pathList.m');
+                disp(i18n('updatepath_pathlist'));
                 addpath(pathsToAdd);
             end
         end
     else
-        warning(['Path to package does not exist: ' pth]);
+        warning(i18n('updatepath_404', dirPath));
         return;
     end
 end
@@ -762,9 +767,9 @@ function c = updateAllPaths(opts, namesAlreadyAdded)
         f = fs{ii};
         if ~ismember(f, namesAlreadyAdded)
             if ~opts.debug                
-                pth = fullfile(opts.installDir, f);
-                disp(['   Adding to path: ' pth]);
-                addpath(pth);
+                dirPath = fullfile(opts.installDir, f);
+                disp(mpm_config('updatepath_op', dirPath));
+                addpath(dirPath);
             end
             c = c + 1;
         end
@@ -777,9 +782,15 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
 
     % init matlab's input parser and read action
     q = inputParser;
-    validActions = {'install', 'search', 'uninstall', 'init', ...
-        'freeze', 'set'};
-    checkAction = @(x) any(validatestring(x, validActions));
+    actions = {                                                             ...
+        'init',                                                             ...
+        'search',                                                           ...
+        'install',                                                          ...
+        'uninstall',                                                        ...
+        'freeze',                                                           ...
+        'set'                                                               ...
+    };
+    checkAction = @(x) any(validatestring(x, actions));
     addRequired(q, 'action', checkAction);
     defaultName = '';
     addOptional(q, 'remainingargs', defaultName);
@@ -787,7 +798,7 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
     opts.action = q.Results.action;
     remainingArgs = q.Results.remainingargs;
 
-    allParams = { ...
+    params = { ...
         'collection', '-c', ...
         'in-file', '-i', ...
         'install-dir', '-d', ...
@@ -798,7 +809,8 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
         '--approve' ...
         '--debug', ...
         '--use-local', '-e', ...
-        '--force', '-f', '--no-paths', ...
+        '--force', '-f', ...
+        '--no-paths', ...
         '--github-first', '-gh', ...
         '--local', ...
         '--query', '-q', ...
@@ -810,13 +822,13 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
             package.query = '';
             return;
         else
-            error('You must specify a package name or a filename.');
+            error(i18n('parseargs_noargin'));
         end
     end
 
     % if first arg is not a param name, it's the package name
     nextArg = remainingArgs{1};
-    if ~ismember(lower(nextArg), lower(allParams))
+    if ~ismember(lower(nextArg), lower(params))
         package.name = nextArg;
         package.query = '';
         remainingArgs = remainingArgs(2:end);
@@ -875,14 +887,14 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
             opts.debug = true;
         elseif strcmpi(curArg, '--no-paths')
             package.addPath = false;
-            opts.nopaths = true;
+            opts.noPaths = true;
         elseif strcmpi(curArg, '--all-paths')
             package.addAllDirsToPath = true;
             opts.addAllDirsToPath = true;
         elseif strcmpi(curArg, '--local')
             opts.localInstall = true;
             package.localInstall = true;
-        elseif strcmpi(curArg, '-use-local') || strcmpi(curArg, '-e')
+        elseif strcmpi(curArg, '--use-local') || strcmpi(curArg, '-e')
             opts.localInstallUseLocal = true;
             package.noRmdirOnUninstall = true;
         else
@@ -903,9 +915,7 @@ end
 
 function nextArg = getNextArg(remainingArgs, ii, curArg)
     if numel(remainingArgs) <= ii
-        error(['No value was given for ''' curArg ...
-            '''. Name-value pair arguments require a name followed by ' ...
-            'a value.']);
+        error(i18n('getnextarg_noargin', curArg));
     end
     nextArg = remainingArgs{ii+1};
 end
@@ -917,70 +927,48 @@ function isOk = validateArgs(package, opts)
     end
     if isempty(package.name) && isempty(opts.inFile)
         if ~strcmpi(opts.action, 'freeze')
-            error('You must specify a package name or a filename.');
+            error(i18n('parseargs_noargin'));
         end
     end
     if ~isempty(opts.inFile)
-        assert(isempty(package.name), ...
-            'Cannot specify package name if installing from filename');
-        assert(isempty(package.url), ...
-            'Cannot specify url if installing from filename');
-        assert(isempty(package.internalDir), ...
-            'Cannot specify internal-dir if installing from filename');
-        assert(isempty(package.releaseTag), ...
-            'Cannot specify release-tag if installing from filename');
-        assert(~opts.searchGithubFirst, ...
-            'Cannot set github-first if installing from filename');
+        assert(isempty(package.name), i18n('validateargs_infile_name'));
+        assert(isempty(package.url), i18n('validateargs_infile_url'));
+        assert(isempty(package.internalDir), i18n('validateargs_infile_internal_dir'));
+        assert(isempty(package.releaseTag), i18n('validateargs_infile_release_tag'));
+        assert(~opts.searchGithubFirst, i18n('validateargs_infile_github_first'));
     else
-        assert(~opts.approve, ...
-            'Can only set approve if installing from filename');
+        assert(~opts.approve, i18n('validateargs_infile_approve'));
     end
     if strcmpi(opts.action, 'uninstall')
-        assert(isempty(package.url), ...
-            'Cannot specify url if uninstalling');
-        assert(isempty(package.query), ...
-            'Cannot specify query if uninstalling');
-        assert(isempty(package.internalDir), ...
-            'Cannot specify internal-dir if uninstalling');
-        assert(isempty(package.releaseTag), ...
-            'Cannot specify release-tag if uninstalling');
-        assert(~opts.searchGithubFirst, ...
-            'Cannot set github-first if uninstalling');
+        assert(isempty(package.url), i18n('validateargs_url', 'uninstall'));
+        assert(isempty(package.query), i18n('validateargs_query', 'uninstall'));
+        assert(isempty(package.internalDir), i18n('validateargs_internal_dir', 'uninstall'));
+        assert(isempty(package.releaseTag), i18n('validateargs_release_tag', 'uninstall'));
+        assert(~opts.searchGithubFirst, i18n('validateargs_github_first', 'uninstall'));
     end
     if strcmpi(opts.action, 'search')
-        assert(~opts.force, 'Nothing to force when searching.');
+        assert(~opts.force, i18n('validateargs_force_combination', 'search'));
     end
     if strcmpi(opts.action, 'freeze')
-        assert(~opts.force, 'Nothing to force when running ''freeze''.');
-        assert(isempty(package.url), ...
-            'Cannot specify url when running ''freeze''');
-        assert(isempty(package.query), ...
-            'Cannot specify query when running ''freeze''');
-        assert(isempty(package.internalDir), ...
-            'Cannot specify internal-dir when running ''freeze''');
-        assert(isempty(package.releaseTag), ...
-            'Cannot specify release-tag when running ''freeze''');
-        assert(~opts.searchGithubFirst, ...
-            'Cannot set github-first when running ''freeze''');
+        assert(~opts.force, i18n('validateargs_force_combination', 'freeze'));
+        assert(isempty(package.url), i18n('validateargs_url', 'freeze'));
+        assert(isempty(package.query), i18n('validateargs_query', 'freeze'));
+        assert(isempty(package.internalDir), i18n('validateargs_internal_dir', 'freeze'));
+        assert(isempty(package.releaseTag), i18n('validateargs_release_tag', 'freeze'));
+        assert(~opts.searchGithubFirst, i18n('validateargs_github_first', 'freeze'));
     end
     if strcmpi(opts.action, 'set')
-        assert(~opts.force, 'Nothing to force when running ''set''.');
-        assert(isempty(package.url), ...
-            'Cannot specify url when running ''set''');
-        assert(isempty(package.query), ...
-            'Cannot specify query when running ''set''');
-        assert(isempty(package.releaseTag), ...
-            'Cannot specify release-tag when running ''set''');
-        assert(~opts.searchGithubFirst, ...
-            'Cannot set github-first when running ''set''');
+        assert(~opts.force, i18n('validateargs_force_combination', 'set'));
+        assert(isempty(package.url), i18n('validateargs_url', 'set'));
+        assert(isempty(package.query), i18n('validateargs_query', 'set'));
+        assert(isempty(package.releaseTag), i18n('validateargs_release_tag', 'set'));
+        assert(~opts.searchGithubFirst, i18n('validateargs_github_first', 'set'));
     end
     if opts.localInstall
-        assert(~isempty(package.url), ...
-            'Must specify local path with -u when running ''--local''');
+        assert(~isempty(package.url, i18n('validateargs_localinstall_nourl')));
     end
     if opts.localInstallUseLocal
-        assert(opts.localInstall, ...
-            'Can only specify -e when running ''--local''');
+        assert(opts.localInstall, i18n('validateargs_uselocal_local'));
     end
 end
 
@@ -1007,33 +995,32 @@ function readRequirementsFile(fileName, opts)
 
         for jj = 1:numel(illegalParams)
             if ~isempty(strfind(line, illegalParams{jj}))
-                error(['Line ' num2str(ii) ' in in-file cannot contain ''' illegalParams{jj} '''. (Illegal arguments: ''-i'', ''in-file'',  ''install-dir'', ''-c''.)']);
+                error(i18n('', num2str(ii), illegalParams{jj}));
             end
         end
 
         % if args are specified inside file, don't allow specifying w/ opts
         if opts.force && (~isempty(strfind(line, ' --force')) || ~isempty(strfind(line, ' -f')))
-            error('Cannot set --force because it is in in-file.');
+            error(i18n('requirements_infile_conflict', 'force'));
         end
         if opts.noPaths && ~isempty(strfind(line, ' --no-paths'))
-            error('Cannot set --no-paths because it is in in-file.');
+            error(i18n('requirements_infile_conflict', 'no-paths'));
         end
         if opts.addAllDirsToPath && ~isempty(strfind(line, ' --all-paths'))
-            error('Cannot set --all-paths because it is in in-file.');
+            error(i18n('requirements_infile_conflict', 'all-paths'));
         end
         if opts.localInstall && ~isempty(strfind(line, ' --local'))
-            error('Cannot set --local because it is in in-file.');
+            error(i18n('requirements_infile_conflict', 'local'));
         end
-        if opts.localInstallUseLocal && (~isempty(strfind(line, ' -use-local')) || ~isempty(strfind(line, ' -e')))
-            error('Cannot set -e because it is in in-file.');
+        if opts.localInstallUseLocal && (~isempty(strfind(line, '--use-local')) || ~isempty(strfind(line, ' -e')))
+            error(i18n('requirements_infile_conflict', 'use-local'));
         end
 
         % check if installDir set on line
         if ~isempty(strfind(line, ' -d')) || ~isempty(strfind(line, ' InstallDir '))
             % warn if user also provided this line globally
             if opts.installDirOverride
-                warning([' install dir (-d) is set inside file (line ' ...
-                    num2str(ii) '), over-riding default.']);
+                warning(i18n('requirements_installdir_override', num2str(ii)));
             end
         elseif ~isempty(line)
             cmd = [cmd ' -d ' opts.installDir];
@@ -1043,8 +1030,7 @@ function readRequirementsFile(fileName, opts)
         if ~isempty(strfind(line, ' -c')) || ~isempty(strfind(line, ' Collection '))
             % warn if user also provided this line globally
             if ~strcmpi(opts.collection, 'default')
-                warning([' collection (-c) is set inside file (line ' ...
-                    num2str(ii) '), over-riding default.']);
+                warning(i18n('requirements_collection_global', opts.collection, num2str(ii)));
             end
         elseif ~isempty(line)
             cmd = [cmd ' -c ' opts.collection];
@@ -1065,24 +1051,24 @@ function readRequirementsFile(fileName, opts)
                 cmd = [cmd ' --local'];
             end
             if opts.localInstallUseLocal
-                cmd = [cmd ' -use-local'];
+                cmd = [cmd ' --use-local'];
             end
             cmds = [cmds cmd];
         end
     end
 
     % verify
-    disp('About to run the following commands: ');
+    disp(i18n('requirements_command_list'));
     for ii = 1:numel(cmds)
-        disp(['   mpm ' opts.action ' ' cmds{ii}]);
+        disp(i18n('requirements_command', opts.action, cmds{ii}));
     end
     if ~opts.approve % otherwise, auto-approve the below
-        reply = input('Confirm (y/n)? ', 's');
+        reply = input(i18n('confirm'), 's');
         if isempty(reply)
-            reply = 'y';
+            reply = i18n('confirm_yes');
         end
-        if ~strcmpi(reply(1), 'y')
-            disp('I saw nothing.');
+        if ~strcmpi(reply(1), i18n('confirm_yes'))
+            disp(i18n('confirm_nvm'));
             return;
         end
     end
@@ -1115,23 +1101,23 @@ function checkForFileAndRun(installDir, fileName, opts)
     end
 
     % verify
-    disp([fileName ' file found at ' fpath]);
+    disp(i18n('checkfilerun_200', fileName, fpath));
     if numel(lines) > 0
-        disp('Showing first lines of comments:');
+        disp(i18n('checkfilerun_help'));
         disp(strjoin(lines, '\n'));
     end
     if ~opts.force
-        reply = input(['Run ' fileName ' (y/n)? '], 's');
+        reply = input(['Run ' fileName ' (Y/N)? '], 's');
         if isempty(reply)
-            reply = 'y';
+            reply = i18n('confirm_yes');
         end
-        if ~strcmpi(reply(1), 'y')
-            disp(['Skipping ' fileName '.']);
+        if ~strcmpi(reply(1), i18n('confirm_yes'))
+            disp(i18n('checkfilerun_skip', fileName));
             return;
         end
-        disp(['Running ' fileName ' ...']);
+        disp(i18n('checkfilerun_running', fileName));
     else
-        disp(['Running ' fileName ' (--force was on)...']);
+        disp(i18n('checkfilerun_run_force', fileName));
     end
 
     % run
@@ -1165,4 +1151,50 @@ function pathList = checkForPathlistAndGenpath(fpath, basedir)
     if fid ~= -1
         fclose(fid);
     end
+end
+
+function str = i18n(key, varargin)
+    persistent locale nls
+    locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
+    load nls.mat nls;
+
+    %% Check if message key exists.
+    if isfield(nls, locale)
+        data = nls.(locale);
+    else
+        data = nls.en;
+    end
+    
+    if ~ischar(key)
+        if (                                                                ...
+            ~isfield(nls, locale)                                      ...
+            || ~isfield(nls.(locale), 'unexpected_key')                ...
+        )
+            error(nls.en.unexpected_key, class(key));
+        else
+            error(nls.(locale).unexpected_key, class(key));
+        end
+    end
+
+    if (                                                                    ...
+        ~isfield(data, key)                                                 ...
+        && strcmp(locale, 'en')                                             ...
+        || ~isfield(nls.en, key)                                       ...
+    )
+        error(nls.en.undefined_key, key);
+    end
+
+    %% Get the localised message.
+    if isfield(data, key)
+        str = data.(key);
+    else
+        str = sprintf(nls.en.(key), string(varargin{:}));
+    end
+
+    %% Variable argument substitution.
+    if nargin == 2
+        return;
+    end
+
+    str = sprintf(str, varargin{:});
 end
