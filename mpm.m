@@ -374,34 +374,34 @@ function url = findUrlOnFileExchange(package)
     end
 
     % query file exchange
-    baseUrl = 'http://www.mathworks.com/matlabcentral/fileexchange/';
+    baseUrl = 'http://www.mathworks.com';
     html = webread(baseUrl, 'term', query);
 
     % extract all hrefs from '<h3><a href="/matlabcentral/fileexchange/">'
-    htmlTreePath = '/toolbox/textanalytics/textanalytics/@htmlTree/htmlTree.m';
-    if strcmp(strrep(which('htmlTree'), matlabroot(), ''), htmlTreePath)
+    htmlTreePath = fullfile(                                                ...
+        'toolbox', 'textanalytics',                                         ...
+        'textanalytics', '@htmlTree', 'htmlTree.m'                          ...
+    );
+    if strcmp(strrep(which('htmlTree'), matlabroot(), ''), ['', filesep, htmlTreePath])
         selector = 'h3 a[href^="/matlabcentral/fileexchange"]';
         subtrees = findElement(htmlTree(html), selector);
         href = getAttribute(subtrees, "href");
         htmlText = extractHTMLText(subtrees);
-        tokens = cell();
+        tokens = cell(0, 0);
         for ii = 1:numel(subtrees)
-            curName = lower(strrep(strrep(htmlText{ii}, '<mark>', ''), '</mark>', ''));
-            if ~isempty(strfind(curName, lower(query)))
-                url = [baseUrl href{ii} '&download=true'];
-                return;
-            end
+            tokens{ii} = { href{ii}, htmlText{ii} };
         end
     else
-        expr = '<h3>[^<]*<a href="/matlabcentral/fileexchange/([^"]*)">([^"]*)</a>';
+        expr = '<h3>[^<]*<a href="([^"]*)">([^"]*)</a>';
         tokens = regexp(html, expr, 'tokens');
-        % if any packages contain package name exactly, return that one
-        for ii = 1:numel(tokens)
-            curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
-            if ~isempty(strfind(curName, lower(query)))
-                url = [baseUrl tokens{ii}{1} '&download=true'];
-                return;
-            end
+    end
+
+    % if any packages contain package name exactly, return that one
+    for ii = 1:numel(tokens)
+        curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
+        if ~isempty(strfind(curName, lower(query)))
+            url = [baseUrl tokens{ii}{1} '&download=true'];
+            return;
         end
     end
 
