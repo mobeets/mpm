@@ -199,7 +199,7 @@ function removePackage(package, opts)
         save(opts.metafile, 'packages');
     end
 
-    disp();
+    disp(i18n('remove_complete'));
 end
 
 function dispTree(name)
@@ -545,10 +545,11 @@ end
 function isOk = checkoutFromUrl(package)
 % git checkout from url to installDir
     isOk = true;
+    if ispc, quote = '"'; else, quote = ''''; end
     if ~isempty(package.releaseTag)
-        flag = system(['git clone --depth 1 --branch ', package.releaseTag, ' ', package.url, ' ''', package.installDir, '''']);
+        flag = system(['git clone --depth 1 --branch ', package.releaseTag, ' ', package.url, ' ', quote, package.installDir, quote]);
     else
-        flag = system(['git clone --depth 1 ', package.url, ' ''', package.installDir, '''']);
+        flag = system(['git clone --depth 1 ', package.url, ' ', quote, package.installDir, quote]);
     end
     if (flag ~= 0)
         isOk = false;
@@ -955,10 +956,10 @@ function isOk = validateArgs(package, opts)
         assert(~opts.searchGithubFirst, i18n('validateargs_github_first', 'uninstall'));
     end
     if strcmpi(opts.action, 'search')
-        assert(~opts.force, i18n('validateargs_force_combination', 'search'));
+        assert(~opts.force, i18n('validateargs_force_conflict', 'search'));
     end
     if strcmpi(opts.action, 'freeze')
-        assert(~opts.force, i18n('validateargs_force_combination', 'freeze'));
+        assert(~opts.force, i18n('validateargs_force_conflict', 'freeze'));
         assert(isempty(package.url), i18n('validateargs_url', 'freeze'));
         assert(isempty(package.query), i18n('validateargs_query', 'freeze'));
         assert(isempty(package.internalDir), i18n('validateargs_internal_dir', 'freeze'));
@@ -966,7 +967,7 @@ function isOk = validateArgs(package, opts)
         assert(~opts.searchGithubFirst, i18n('validateargs_github_first', 'freeze'));
     end
     if strcmpi(opts.action, 'set')
-        assert(~opts.force, i18n('validateargs_force_combination', 'set'));
+        assert(~opts.force, i18n('validateargs_force_conflict', 'set'));
         assert(isempty(package.url), i18n('validateargs_url', 'set'));
         assert(isempty(package.query), i18n('validateargs_query', 'set'));
         assert(isempty(package.releaseTag), i18n('validateargs_release_tag', 'set'));
@@ -1178,9 +1179,9 @@ end
 
 function str = i18n(key, varargin)
     persistent locale nls
-    if ~exist ('nls', 'var')
+    if ~isstruct('nls')
         locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
-        load mpm_nls.mat nls;
+        load('mpm_nls.mat', 'nls');
     end
 
     %% Check if message key exists.
@@ -1221,5 +1222,5 @@ function str = i18n(key, varargin)
         return;
     end
 
-    str = sprintf(str, string(varargin{:}));
+    str = sprintf(str, cellfun(@string, varargin));
 end

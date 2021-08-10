@@ -122,7 +122,7 @@ assert(contains(results,'covidx'))
 
 %% Test search
 results = evalc('mpm search export_fig');
-assert(contains(results,'Found url: https://api.github.com/repos/altmany/export_fig/zipball/v3.'))
+assert(contains(results,'Found url: http://www.mathworks.com/matlabcentral/fileexchange/23629-export_fig'))
 
 
 
@@ -132,3 +132,4 @@ mpm install --approve --force -i requirements-example.txt
 assert(~isempty(which('export_fig')))
 assert(~isempty(which('matlab2tikz')))
 assert(~isempty(which('brewermap')))
+cd('..')
