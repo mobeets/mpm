@@ -74,7 +74,7 @@ function mpm(action, varargin)
     if opts.debug
         warning(i18n('debug_message'));
     end
-    disp(i18n('setup_log', opts.collection));
+    disp(i18n('setup_option', opts.collection));
 
     % installing from requirements
     if ~isempty(opts.inFile)
@@ -1178,8 +1178,10 @@ end
 
 function str = i18n(key, varargin)
     persistent locale nls
-    locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
-    load mpm_nls.mat nls;
+    if ~exist ('nls', 'var')
+        locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
+        load mpm_nls.mat nls;
+    end
 
     %% Check if message key exists.
     if isfield(nls, locale)
@@ -1215,9 +1217,9 @@ function str = i18n(key, varargin)
     end
 
     %% Variable argument substitution.
-    if nargin == 2
+    if nargin == 1
         return;
     end
 
-    str = sprintf(str, varargin{:});
+    str = sprintf(str, string(varargin{:}));
 end
