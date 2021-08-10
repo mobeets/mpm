@@ -378,15 +378,30 @@ function url = findUrlOnFileExchange(package)
     html = webread(baseUrl, 'term', query);
 
     % extract all hrefs from '<h3><a href="/matlabcentral/fileexchange/">'
-    expr = '<h3>[^<]*<a href="/matlabcentral/fileexchange/([^"]*)">([^"]*)</a>';
-    tokens = regexp(html, expr, 'tokens');
-
-    % if any packages contain package name exactly, return that one
-    for ii = 1:numel(tokens) 
-        curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
-        if ~isempty(strfind(curName, lower(query)))
-            url = [baseUrl tokens{ii}{1} '&download=true'];
-            return;
+    htmlTreePath = '/toolbox/textanalytics/textanalytics/@htmlTree/htmlTree.m';
+    if strcmp(strrep(which('htmlTree'), matlabroot(), ''), htmlTreePath)
+        selector = 'h3 a[href^="/matlabcentral/fileexchange"]';
+        subtrees = findElement(htmlTree(html), selector);
+        href = getAttribute(subtrees, "href");
+        htmlText = extractHTMLText(subtrees);
+        tokens = cell();
+        for ii = 1:numel(subtrees)
+            curName = lower(strrep(strrep(htmlText{ii}, '<mark>', ''), '</mark>', ''));
+            if ~isempty(strfind(curName, lower(query)))
+                url = [baseUrl href{ii} '&download=true'];
+                return;
+            end
+        end
+    else
+        expr = '<h3>[^<]*<a href="/matlabcentral/fileexchange/([^"]*)">([^"]*)</a>';
+        tokens = regexp(html, expr, 'tokens');
+        % if any packages contain package name exactly, return that one
+        for ii = 1:numel(tokens)
+            curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
+            if ~isempty(strfind(curName, lower(query)))
+                url = [baseUrl tokens{ii}{1} '&download=true'];
+                return;
+            end
         end
     end
 
@@ -394,12 +409,12 @@ function url = findUrlOnFileExchange(package)
     if ~isempty(tokens)
         url = tokens{1}{1};
         url = [baseUrl url '&download=true'];
-%         urlFormat = @(aid, ver) [ ...
-%             'https://www.mathworks.com/' ...
-%             'matlabcentral/mlc-downloads/downloads/submissions/' aid      ...
-%             '/versions/' version '/download/zip' ...
-%         ];
-%         url = urlFormat(aid, '101'); % 101 works for all? we'll see
+%       urlFormat = @(aid, ver) [ ...
+%           'https://www.mathworks.com/' ...
+%           'matlabcentral/mlc-downloads/downloads/submissions/' aid      ...
+%           '/versions/' version '/download/zip' ...
+%       ];
+%       url = urlFormat(aid, '101'); % 101 works for all? we'll see
     else
         url = '';
     end
