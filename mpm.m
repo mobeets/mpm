@@ -375,7 +375,7 @@ function url = findUrlOnFileExchange(package)
 
     % query file exchange
     baseUrl = 'http://www.mathworks.com';
-    html = webread(baseUrl, 'term', query);
+    html = webread(baseUrl, 'q', query);
 
     % extract all hrefs from '<h3><a href="/matlabcentral/fileexchange/">'
     htmlTreePath = fullfile(                                                ...
