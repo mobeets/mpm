@@ -389,7 +389,10 @@ function url = findUrlOnFileExchange(package)
         htmlText = extractHTMLText(subtrees);
         tokens = cell(0, 0);
         for ii = 1:numel(subtrees)
-            tokens{ii} = { href{ii}, htmlText{ii} };
+            tokens{ii} = {                                                  ...
+                strrep(href{ii}, '/matlabcentral/fileexchange', ''),        ...
+                htmlText{ii}                                                ...
+            };
         end
     else
         expr = '<h3>[^<]*<a href="([^"]*)">([^"]*)</a>';
