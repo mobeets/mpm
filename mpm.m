@@ -389,21 +389,20 @@ function url = findUrlOnFileExchange(package)
         htmlText = extractHTMLText(subtrees);
         tokens = cell(0, 0);
         for ii = 1:numel(subtrees)
-            tokens{ii} = {                                                  ...
-                strrep(href{ii}, '/matlabcentral/fileexchange', ''),        ...
-                htmlText{ii}                                                ...
-            };
+            tokens{ii} = { href{ii}, htmlText{ii} };
         end
     else
         expr = '<h3>[^<]*<a href="([^"]*)">([^"]*)</a>';
         tokens = regexp(html, expr, 'tokens');
     end
 
+    baseUrl = strrep(baseUrl, '/matlabcentral/fileexchange', '');
+
     % if any packages contain package name exactly, return that one
     for ii = 1:numel(tokens)
         curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
         if ~isempty(strfind(curName, lower(query)))
-            url = [baseUrl tokens{ii}{1} '&download=true'];
+            url = [ tokens{ii}{1} '&download=true'];
             return;
         end
     end
