@@ -662,9 +662,33 @@ function [m, metafile] = getMetadata(opts)
     metafile = fullfile(opts.metadir, 'mpm.mat');
     if exist(metafile, 'file')
         m = load(metafile);
+        if isfield(m, 'internal_dir')
+            m.internalDir = m.internal_dir;
+            m.releaseTag = m.release_tag;
+            m.addPath = m.add_path;
+            m.localInstall = m.local_install;
+            m.noRmdirOnUninstall = m.no_rmdir_on_uninstall;
+            m.addAllDirsToPath = m.add_all_dirs_to_path;
+            m.installDir = m.install_dir;
+            m.downloadDate = m.download_date;
+            rmfield(m, {                                                        ...
+                'internal_dir',                                                 ...
+                'release_tag',                                                  ...
+                'add_path',                                                     ...
+                'local_install',                                                ...
+                'no_rmdir_on_uninstall',                                        ...
+                'add_all_dirs_to_path',                                         ...
+                'install_dir',                                                  ...
+                'download_date'                                                 ...
+            });
+            packages = m;
+            save(metafile, 'packages');
+            clearvars('packages');
+        end
     else
         m = struct();
     end
+
     if ~isfield(m, 'packages')
         m.packages = [];
     end
@@ -1198,7 +1222,7 @@ function str = i18n(key, varargin)
     persistent locale nls
     if ~isstruct('nls')
         locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
-        load('mpm_nls.mat', 'nls');
+        nls = load('mpm_nls.mat');
     end
 
     %% Check if message key exists.
