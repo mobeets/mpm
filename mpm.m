@@ -1220,7 +1220,7 @@ end
 
 function str = i18n(key, varargin)
     persistent locale nls
-    if ~isstruct('nls')
+    if ~isstruct(nls)
         locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
         nls = load('mpm_nls.mat');
     end
