@@ -687,8 +687,8 @@ function [m, metafile] = getMetadata(opts)
                     'installdir',                                                  ...
                     'date_downloaded'                                                 ...
                 });
-                packages = [packages pkg];
             end
+            packages = [packages pkg];
         end
         save(metafile, 'packages');
         m.packages = packages;
