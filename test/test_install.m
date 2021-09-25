@@ -136,6 +136,9 @@ assert(isempty(which('brewermap')))
 
 
 %%% Test freeze
+if ~exist('contains', 'builtin')
+    contains = @(x,y) ~isempty(strfind(x,y));
+end
 results = evalc('mpm freeze');
 assert(contains(results,'export_fig'))
 assert(contains(results,'matlab2tikz==ca56d9f'))
@@ -145,11 +148,10 @@ assert(contains(results,'covidx'))
 
 %%% Test search
 results = evalc('mpm search export_fig');
-assert(contains(results,'Found url: https://api.github.com/repos/altmany/export_fig/zipball/v3.15'))
+assert(contains(results, ...
+    'Found url: http://www.mathworks.com/matlabcentral/fileexchange/23629-export_fig?s_tid=srchtitle&download=true'))
 
 pause(GITHUB_SEARCH_RATELIMIT);
-
-
 
 %%% Test infile
 mpm install --approve --force -i requirements-example.txt

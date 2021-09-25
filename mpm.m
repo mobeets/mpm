@@ -385,24 +385,27 @@ function url = findUrlOnFileExchange(package)
     if strcmp(strrep(which('htmlTree'), matlabroot(), ''), ['', filesep, htmlTreePath])
         selector = 'h3 a[href^="/matlabcentral/fileexchange"]';
         subtrees = findElement(htmlTree(html), selector);
-        href = getAttribute(subtrees, "href");
+        href = getAttribute(subtrees, 'href');
         htmlText = extractHTMLText(subtrees);
         tokens = cell(0, 0);
         for ii = 1:numel(subtrees)
-            tokens{ii} = { href{ii}, htmlText{ii} };
+            tokens{ii} = {                                                  ...
+                strrep(href{ii}, '/matlabcentral/fileexchange', ''),        ...
+                htmlText{ii}                                                ...
+            };
         end
     else
         expr = '<h3>[^<]*<a href="([^"]*)">([^"]*)</a>';
         tokens = regexp(html, expr, 'tokens');
     end
 
-    baseUrl = strrep(baseUrl, '/matlabcentral/fileexchange', '');
-
     % if any packages contain package name exactly, return that one
     for ii = 1:numel(tokens)
         curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
         if ~isempty(strfind(curName, lower(query)))
-            url = [ tokens{ii}{1} '&download=true'];
+            url = [baseUrl ...
+                strrep(tokens{ii}{1}, '/matlabcentral/fileexchange', '')    ...
+                '&download=true'];
             return;
         end
     end
@@ -413,7 +416,7 @@ function url = findUrlOnFileExchange(package)
         url = [baseUrl url '&download=true'];
 %       urlFormat = @(aid, ver) [ ...
 %           'https://www.mathworks.com/' ...
-%           'matlabcentral/mlc-downloads/downloads/submissions/' aid      ...
+%           'matlabcentral/mlc-downloads/downloads/submissions/' aid        ...
 %           '/versions/' version '/download/zip' ...
 %       ];
 %       url = urlFormat(aid, '101'); % 101 works for all? we'll see
@@ -1263,5 +1266,6 @@ function str = i18n(key, varargin)
         return;
     end
 
-    str = sprintf(str, cellfun(@string, varargin));
+    xs = cellfun(@char, varargin, 'uni', false);
+    str = sprintf(str, xs{:});
 end
