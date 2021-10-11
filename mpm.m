@@ -39,7 +39,7 @@ function mpm(action, varargin)
 %
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
-%   in-file (-i): if set, will run mpm on all packages listed in file
+%   infile (-i): if set, will run mpm on all packages listed in file
 %   install-dir (-d): where to install package
 %   query (-q): if name is different than query
 %   release-tag (-t): if url is found on github, this lets user set release tag
@@ -857,7 +857,7 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
 
     params = { ...
         'collection', '-c', ...
-        'in-file', '-i', ...
+        'infile', '-i', ...
         'install-dir', '-d', ...
         'internal-dir', '-n', ...
         'release-tag', '-t', ...
@@ -911,7 +911,7 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
             nextArg = getNextArg(remainingArgs, ii, curArg);
             package.query = nextArg;
             usedNextArg = true;
-        elseif strcmpi(curArg, 'in-file') || strcmpi(curArg, '-i')
+        elseif strcmpi(curArg, 'infile') || strcmpi(curArg, '-i')
             nextArg = getNextArg(remainingArgs, ii, curArg);
             opts.inFile = nextArg;
             usedNextArg = true;
@@ -1035,7 +1035,7 @@ function readRequirementsFile(fileName, opts)
 
     % build list of commands to run
     % and check for illegal params (note spaces)
-    illegalParams = {' -i ', ' in-file '};
+    illegalParams = {' -i ', ' infile '};
     cmds = {};
     for ii = 1:numel(lines)
         line = lines{ii};
