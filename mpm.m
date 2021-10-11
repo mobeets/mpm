@@ -48,7 +48,7 @@ function mpm(action, varargin)
 %     by specifying a custom collection name
 %
 % arguments that are true if passed (otherwise they are false):
-%   --github-first (-gh): check github for url before matlab fileexchange
+%   --github-first (-g): check github for url before matlab fileexchange
 %   --force (-f): install package even if name already exists in InstallDir
 %   --approve: when using -i, auto-approve the installation without confirming
 %   --debug: do not install anything or update paths; just pretend
