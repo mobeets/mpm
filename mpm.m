@@ -1022,7 +1022,7 @@ function isOk = validateArgs(package, opts)
         assert(~opts.searchGithubFirst, i18n('validateargs_github_first', 'set'));
     end
     if opts.localInstall
-        assert(~isempty(package.url, i18n('validateargs_localinstall_nourl')));
+        assert(~isempty(package.url), i18n('validateargs_localinstall_nourl'));
     end
     if opts.localInstallUseLocal
         assert(opts.localInstall, i18n('validateargs_uselocal_local'));
