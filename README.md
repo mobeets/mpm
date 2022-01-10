@@ -130,3 +130,7 @@ If you restart Matlab, you'll want to run `mpm init` to re-add all the folders i
 Because there's no standard directory structure for a Matlab package, automatically adding paths can get a bit messy. When mpm downloads a package, it adds a single folder within that package to your Matlab path. If there are no `*.m` files in the package's base directory, it looks in folders called 'bin', 'src', 'lib', or 'code' instead. You can specify the name of an internal directory by passing in an `-n` or `internaldir` argument. To install a package without modifying any paths, set `--nopaths`. Or to add _all_ subfolders in a package to the path, set `--allpaths`.
 
 Mpm keeps track of the packages it's downloaded in a file called `mpm.mat`, within each installation directory.
+
+## Requirements
+
+mpm should work cross-platform on versions Matlab 2014b and later.
