@@ -1,5 +1,7 @@
 # Matlab Package Manager (mpm)
 
+[![View mpm on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/54548-mpm)
+
 A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/pip)). Downloads packages from Matlab Central's File Exchange, GitHub repositories, or any other url pointing to a .zip file.
 
 ## Quickstart
@@ -133,4 +135,4 @@ Mpm keeps track of the packages it's downloaded in a file called `mpm.mat`, with
 
 ## Requirements
 
-mpm should work cross-platform on versions Matlab 2014b and later. Also note that, starting with Matlab 2022, you may see a warning when using mpm, as Matlab includes a built-in command of the same name (used for installing Matlab products). If this is a problem for you, simply rename the file `mpm.m` to something else, and then rename the function name on line 1 of this file to match, as well as the line containing "help mpm".
+mpm should work cross-platform on versions Matlab 2014b and later. Also note that, starting with Matlab 2022, you may see a warning when using mpm, as Matlab includes a built-in command of the same name (used for installing Matlab products). You may need to rename the file `mpm.m` to something else, and then rename the function name on line 1 of this file to match, as well as the line containing "help mpm".
