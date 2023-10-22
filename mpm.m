@@ -387,7 +387,7 @@ function url = findUrlOnFileExchange(package)
     end
 
     % return first result
-    if ~isempty(tokens)
+    if ~isempty(response.items)
         url = response.items{1}.url;
         url = [url '?download=true'];
 %       urlFormat = @(aid, ver) [ ...
