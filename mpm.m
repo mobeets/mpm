@@ -379,8 +379,8 @@ function url = findUrlOnFileExchange(package)
 
     % if any packages contain package name exactly, return that one
     for ii = 1:numel(response.items)
-        item = response.items{ii};
-        if ~isempty(strfind(lower(query), lower(item.description)))
+        item = response.items(ii);
+        if ~isempty(strfind(lower(query), lower(item.title)))
             url = [item.url '?download=true'];
             return;
         end
@@ -388,7 +388,7 @@ function url = findUrlOnFileExchange(package)
 
     % return first result
     if ~isempty(response.items)
-        url = response.items{1}.url;
+        url = response.items(1).url;
         url = [url '?download=true'];
 %       urlFormat = @(aid, ver) [ ...
 %           'https://www.mathworks.com/' ...
