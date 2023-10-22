@@ -379,7 +379,7 @@ function url = findUrlOnFileExchange(package)
 
     % if any packages contain package name exactly, return that one
     for ii = 1:numel(response.items)
-        item = response.items{ii}
+        item = response.items{ii};
         if ~isempty(strfind(lower(query), lower(item.description)))
             url = [item.url '?download=true'];
             return;
