@@ -149,7 +149,7 @@ assert(contains(results,'covidx'))
 %%% Test search
 results = evalc('mpm search export_fig');
 assert(contains(results, ...
-    'Found url: http://www.mathworks.com/matlabcentral/fileexchange/23629-export_fig?s_tid=srchtitle&download=true'))
+    'Found url: https://www.mathworks.com/matlabcentral/fileexchange/23629-export_fig?download=true'))
 
 pause(GITHUB_SEARCH_RATELIMIT);
 

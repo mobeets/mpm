@@ -374,46 +374,22 @@ function url = findUrlOnFileExchange(package)
     end
 
     % query file exchange
-    baseUrl = 'http://www.mathworks.com/matlabcentral/fileexchange';
-    html = webread(baseUrl, 'q', query);
-
-    % extract all hrefs from '<h3><a href="/matlabcentral/fileexchange/">'
-    htmlTreePath = fullfile(                                                ...
-        'toolbox', 'textanalytics',                                         ...
-        'textanalytics', '@htmlTree', 'htmlTree.m'                          ...
-    );
-    if strcmp(strrep(which('htmlTree'), matlabroot(), ''), ['', filesep, htmlTreePath])
-        selector = 'h3 a[href^="/matlabcentral/fileexchange"]';
-        subtrees = findElement(htmlTree(html), selector);
-        href = getAttribute(subtrees, 'href');
-        htmlText = extractHTMLText(subtrees);
-        tokens = cell(0, 0);
-        for ii = 1:numel(subtrees)
-            tokens{ii} = {                                                  ...
-                strrep(href{ii}, '/matlabcentral/fileexchange', ''),        ...
-                htmlText{ii}                                                ...
-            };
-        end
-    else
-        expr = '<h3>[^<]*<a href="([^"]*)">([^"]*)</a>';
-        tokens = regexp(html, expr, 'tokens');
-    end
+    apiUrl = 'https://api.mathworks.com/community/v1/search';
+    response = webread(apiUrl, 'query', query, 'scope', 'file-exchange');
 
     % if any packages contain package name exactly, return that one
-    for ii = 1:numel(tokens)
-        curName = lower(strrep(strrep(tokens{ii}{2}, '<mark>', ''), '</mark>', ''));
-        if ~isempty(strfind(curName, lower(query)))
-            url = [baseUrl ...
-                strrep(tokens{ii}{1}, '/matlabcentral/fileexchange', '')    ...
-                '&download=true'];
+    for ii = 1:numel(response.items)
+        item = response.items(ii);
+        if ~isempty(strfind(lower(query), lower(item.title)))
+            url = [item.url '?download=true'];
             return;
         end
     end
 
     % return first result
-    if ~isempty(tokens)
-        url = tokens{1}{1};
-        url = [baseUrl url '&download=true'];
+    if ~isempty(response.items)
+        url = response.items(1).url;
+        url = [url '?download=true'];
 %       urlFormat = @(aid, ver) [ ...
 %           'https://www.mathworks.com/' ...
 %           'matlabcentral/mlc-downloads/downloads/submissions/' aid        ...
