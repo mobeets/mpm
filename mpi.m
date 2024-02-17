@@ -1,6 +1,6 @@
-function mpm(action, varargin)
-%MPM Matlab Package Manager
-% function mpm(ACTION, varargin)
+function mpi(action, varargin)
+%MPI Matlab Package Installer
+% function mpi(ACTION, varargin)
 %
 % ACTION can be any of the following:
 %   'init'      add all installed packages in default install directory to path
@@ -17,34 +17,34 @@ function mpm(action, varargin)
 % Examples:
 %
 %   % Add all installed packages to the path (e.g. to be run at startup)
-%   mpm init
+%   mpi init
 %
 %   % Search for a package called 'test' on Matlab File Exchange
-%   mpm search test
+%   mpi search test
 %
 %   % Install a package called 'test'
-%   mpm install test
+%   mpi install test
 %
 %   % Uninstall a package called 'test'
-%   mpm uninstall test
+%   mpi uninstall test
 %
 %   % List all installed packages
-%   mpm freeze
+%   mpi freeze
 %
 %   % Change the folder added to the path in an already installed package
-%   mpm set test -n folder_name_to_add
+%   mpi set test -n folder_name_to_add
 %
 % To modify the default behavior of the above commands,
 % the following optional arguments are available:
 %
 % name-value arguments:
 %   url (-u): optional; if does not exist, must search
-%   infile (-i): if set, will run mpm on all packages listed in file
+%   infile (-i): if set, will run mpi on all packages listed in file
 %   install-dir (-d): where to install package
 %   query (-q): if name is different than query
 %   release-tag (-t): if url is found on github, this lets user set release tag
 %   internal-dir (-n): lets user set which directories inside package to add to path
-%   collection (-c): override mpm's default package collection ("default")
+%   collection (-c): override mpi's default package collection ("default")
 %     by specifying a custom collection name
 %
 % arguments that are true if passed (otherwise they are false):
@@ -58,12 +58,12 @@ function mpm(action, varargin)
 %   --use-local (-e): skip copy operation during local install
 %
 % For more help, or to report an issue, see <a href="matlab:
-% web('https://github.com/mobeets/mpm')">the mpm Github page</a>.
+% web('https://github.com/mobeets/mpi')">the mpi Github page</a>.
 %
 
     % print help info if no arguments were provided
     if nargin < 1
-        help mpm;
+        help mpi;
         return;
     end
 
@@ -78,7 +78,7 @@ function mpm(action, varargin)
 
     % installing from requirements
     if ~isempty(opts.inFile)
-        % read filename, and call mpm for all lines in this file
+        % read filename, and call mpi for all lines in this file
         readRequirementsFile(opts.inFile, opts);
         return;
     end
@@ -86,32 +86,32 @@ function mpm(action, varargin)
     % load metadata
     [opts.metadata, opts.metafile] = getMetadata(opts);
 
-    % mpm init
+    % mpi init
     if strcmpi(opts.action, 'init')
-        opts.updateMpmPaths = true;
+        opts.updateMpiPaths = true;
         updatePaths(opts);
         return;
     end
 
-    % mpm freeze
+    % mpi freeze
     if strcmpi(opts.action, 'freeze')
         listPackages(opts);
         return;
     end
 
-    % mpm set
+    % mpi set
     if strcmpi(opts.action, 'set')
         changePackageOptions(package, opts);
         return;
     end
 
-    % mpm uninstall
+    % mpi uninstall
     if strcmpi(opts.action, 'uninstall')
         removePackage(package, opts);
         return;
     end
 
-    % mpm search OR mpm install
+    % mpi search OR mpi install
     findAndSetupPackage(package, opts);
 end
 
@@ -301,11 +301,11 @@ function [package, opts] = setDefaultOpts()
     package.addAllDirsToPath = false;
     package.collection = 'default';
 
-    opts = mpm_config(); % load default opts from config file
+    opts = mpi_config(); % load default opts from config file
     opts.installDir = opts.DEFAULT_INSTALL_DIR;
     opts.metadir = opts.DEFAULT_INSTALL_DIR;
     opts.searchGithubFirst = opts.DEFAULT_CHECK_GITHUB_FIRST;
-    opts.updateMpmPaths = false;
+    opts.updateMpiPaths = false;
     opts.updateAllPaths = false;
     opts.localInstall = false;
     opts.localInstallUseLocal = false;
@@ -638,7 +638,7 @@ end
 
 function [m, metafile] = getMetadata(opts)
 
-    metafile = fullfile(opts.metadir, 'mpm.mat');
+    metafile = fullfile(opts.metadir, 'mpi.mat');
     if exist(metafile, 'file')
         m = load(metafile);
         packages = [];
@@ -734,7 +734,7 @@ function updatePaths(opts)
 
     % add mdir to path for each package in metadata (optional)
     namesAdded = {};
-    if opts.updateMpmPaths
+    if opts.updateMpiPaths
         packages = opts.metadata.packages;
         for ii = 1:numel(packages)
             success = updatePath(packages(ii), opts);
@@ -801,7 +801,7 @@ function c = updateAllPaths(opts, namesAlreadyAdded)
         if ~ismember(f, namesAlreadyAdded)
             if ~opts.debug
                 dirPath = fullfile(opts.installDir, f);
-                disp(mpm_config('updatepath_op', dirPath));
+                disp(mpi_config('updatepath_op', dirPath));
                 addpath(dirPath);
             end
             c = c + 1;
@@ -937,7 +937,7 @@ function [package, opts] = parseArgs(package, opts, action, varargin)
 
     % update metadir, if collection was set
     if ~strcmpi(opts.collection, 'default')
-        opts.metadir = fullfile(opts.metadir, 'mpm-collections',            ...
+        opts.metadir = fullfile(opts.metadir, 'mpi-collections',            ...
             opts.collection);
         opts.installDir = opts.metadir;
         if strcmpi(opts.action, 'install')
@@ -1124,7 +1124,7 @@ function readRequirementsFile(fileName, opts)
     % run all
     for ii = 1:numel(cmds)
         cmd = strsplit(cmds{ii});
-        mpm(opts.action, cmd{:});
+        mpi(opts.action, cmd{:});
     end
 end
 
@@ -1205,7 +1205,7 @@ function str = i18n(key, varargin)
     persistent locale nls
     if ~isstruct(nls)
         locale = char(regexp(get(0, 'Language'), '^[a-zA-Z]+', 'match'));
-        nls = load('mpm_nls.mat');
+        nls = load('mpi_nls.mat');
     end
 
     %% Check if message key exists.

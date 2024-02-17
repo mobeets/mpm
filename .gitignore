@@ -4,7 +4,8 @@
 _old/
 
 # exclude everything
-mpm-packages/*
+mpi-packages/*
+mpm-packages/
 
 # exception to the rule
-!mpm-packages/.gitkeep
+!mpi-packages/.gitkeep
