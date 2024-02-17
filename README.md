@@ -14,6 +14,12 @@ Download/clone this repo and add it to your Matlab path (using `addpath`). Now t
 - `mpi freeze`: lists all packages currently installed
 - `mpi init`: adds all installed packages to path (run when Matlab starts up)
 
+### What it does
+
+By default, mpi installs all Matlab packages to the directory `mpi-packages/`. (You can edit `mpi_config.m` to specify a custom default installation directory.)
+
+If you restart Matlab, you'll want to run `mpi init` to re-add all the folders in the installation directory to your Matlab path. Better yet, just run `mpi init` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html).
+
 ## More details
 
 ### Install a single package
@@ -120,12 +126,6 @@ Using collection "test"
 Specifying a requirements file lets you install or search for multiple packages at once. See 'requirements-example.txt' for an example. Make sure to provide an absolute path to the file!
 
 To automatically confirm installation without being prompted, set `--approve`. Note that this is only available when installing packages from file.
-
-## What it does
-
-By default, mpi installs all Matlab packages to the directory `mpi-packages/`. (You can edit `mpi_config.m` to specify a custom default installation directory.)
-
-If you restart Matlab, you'll want to run `mpi init` to re-add all the folders in the installation directory to your Matlab path. Better yet, just run `mpi init` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html).
 
 ## Moving from `mpm` to `mpi`
 
