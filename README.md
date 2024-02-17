@@ -127,6 +127,12 @@ By default, mpi installs all Matlab packages to the directory `mpi-packages/`. (
 
 If you restart Matlab, you'll want to run `mpi init` to re-add all the folders in the installation directory to your Matlab path. Better yet, just run `mpi init` from your Matlab [startup script](http://www.mathworks.com/help/matlab/ref/startup.html).
 
+## Moving from `mpm` to `mpi`
+
+mpi was previously known as "mpm". (We had to change the name because Matlab started using ["mpm"](https://github.com/mathworks-ref-arch/matlab-dockerfile/blob/main/MPM.md) as a way of installing Matlab toolboxes.)
+
+One way of transitioning from (our) `mpm` to `mpi` is to simply reinstall all packages/collections using `mpi`, which will use the new default installation path in `mpi-packages/`. Alternatively, point `mpi` to the folder containing any previously installed packages by changing `mpi-packages` to `mpm-packages` in `mpi_config.m`.
+
 ## Troubleshooting
 
 Because there's no standard directory structure for a Matlab package, automatically adding paths can get a bit messy. When mpi downloads a package, it adds a single folder within that package to your Matlab path. If there are no `*.m` files in the package's base directory, it looks in folders called 'bin', 'src', 'lib', or 'code' instead. You can specify the name of an internal directory by passing in an `-n` or `internaldir` argument. To install a package without modifying any paths, set `--nopaths`. Or to add _all_ subfolders in a package to the path, set `--allpaths`.
