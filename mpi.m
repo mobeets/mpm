@@ -632,7 +632,7 @@ function mdir = findMDirOfPackage(package)
     warning(i18n('mdir_404'));
     disp(i18n('mdir_help', package.name));
     dispTree(package.installDir);
-    tree
+%     tree
     mdir = '';
 end
 
