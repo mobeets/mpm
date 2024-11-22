@@ -141,6 +141,8 @@ Because there's no standard directory structure for a Matlab package, automatica
 
 mpi keeps track of the packages it's downloaded in a file called `mpi.mat`, within each installation directory.
 
+__If you are having trouble, please submit an [issue](https://github.com/mobeets/mpm/issues/).__
+
 ## Requirements
 
 mpi should work cross-platform on versions Matlab 2014b and later. Also note that, starting with Matlab 2022, you may see a warning when using mpi, as Matlab includes a built-in command of the same name (used for installing Matlab products). You may need to rename the file `mpi.m` to something else, and then rename the function name on line 1 of this file to match, as well as the line containing "help mpi".
