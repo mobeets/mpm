@@ -1,6 +1,8 @@
 # Matlab Package Installer (mpi)
 
+[![View on GitHub](https://img.shields.io/badge/view-repo-blue?logo=github)](https://github.com/mobeets/mpm)
 [![View mpi on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/54548-mpm)
+
 
 A simple package manager for Matlab (inspired by [pip](https://github.com/pypa/pip)). Downloads packages from Matlab Central's File Exchange, GitHub repositories, or any other url pointing to a .zip file.
 
